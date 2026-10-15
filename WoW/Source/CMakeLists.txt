@@ -74,4 +74,5 @@ target_link_libraries(Wow
         WorldClient
         WowServices
         WowSvcs
+        Duskhaven
 )

@@ -373,7 +373,7 @@ static int32_t Script_CalendarGetMaxDate(lua_State* L) {
     WowTime date;
     date.m_month = 0;
     date.m_monthDay = 0;
-    date.m_year = 31;
+    date.m_year = 0x7FFFFFFF;
     date.AddDays(-1, false);
     date.SetHourAndMinutes(23u, 59u);
     lua_pushnumber(L, date.m_weekDay + 1);

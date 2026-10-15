@@ -474,6 +474,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     int32_t IsActiveMover() const;
     float GetDistanceToPos(const C3Vector& pos) const;
     VehicleRec* GetVehicleRec() const;
+    bool ShouldPreventMeleeUnsheath() const;
     uint32_t GetAuraCount() const;
     int32_t GetAuraSpellId(uint32_t index);
     int32_t IsMounted() const;

@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "Client.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "Engine/Source/Base/Base.h"
 #include "Engine/Source/Base/CmdLine.h"
 #include "Engine/Source/BlizzardCore/OggDecompress.h"
@@ -1035,6 +1036,7 @@ static void InitializeClient() {
     GxuLightInitialize();
     GxuLightSetGridSize(16.665001f);
     InputControlInitialize();
+    Duskhaven::Initialize();
     CGlueMgr::Initialize();
 
     if (GetConsoleMessage()) {

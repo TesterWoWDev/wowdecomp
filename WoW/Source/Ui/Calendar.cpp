@@ -561,12 +561,6 @@ int32_t CGCalendar::GetMonth(int32_t offset, int32_t* month, int32_t* year, int3
 
     int32_t clampedYear = *year;
 
-    if (clampedYear >= 30) {
-        clampedYear = 30;
-    }
-
-    *year = clampedYear;
-
     if (clampedYear <= 4) {
         *year = 4;
         int32_t clampedMonth = *month;
@@ -596,12 +590,6 @@ int32_t CGCalendar::ClampAbsMonthDay(int32_t month, int32_t year, int32_t* outMo
     }
 
     int32_t clampedYear = *outYear;
-
-    if (clampedYear >= 30) {
-        clampedYear = 30;
-    }
-
-    *outYear = clampedYear;
 
     if (clampedYear < 4) {
         *outYear = 4;
@@ -681,13 +669,6 @@ bool GameCalendarGetMaxCreateDate(WowTime* date) {
     date->m_year = years + g_clientGameTime.m_year;
     date->m_monthDay = 0;
     date->AddDays(-1, false);
-    int32_t year = date->m_year;
-
-    if (year >= 31) {
-        year = 31;
-    }
-
-    date->m_year = year;
     return date->SetHourAndMinutes(23u, 59u);
 }
 
@@ -1007,19 +988,14 @@ void CGCalendar::UpdateDisplayList(bool signal) {
         CGCalendar::m_absMonth = month;
         CGCalendar::m_absYear = year;
 
-        if (year < 30) {
-            if (year <= 4) {
-                year = 4;
-                CGCalendar::m_absYear = 4;
+        if (year <= 4) {
+            year = 4;
+            CGCalendar::m_absYear = 4;
 
-                if (g_clientGameTime.m_month <= 10) {
-                    month = 10;
-                    CGCalendar::m_absMonth = 10;
-                }
+            if (g_clientGameTime.m_month <= 10) {
+                month = 10;
+                CGCalendar::m_absMonth = 10;
             }
-        } else {
-            year = 30;
-            CGCalendar::m_absYear = 30;
         }
 
         int32_t weekDay;
@@ -1078,8 +1054,8 @@ void CGCalendar::UpdateDisplayList(bool signal) {
 
         month = (month + 1) % 12;
 
-        if (!month && ++year >= 31) {
-            break;
+        if (!month) {
+            ++year;
         }
     }
 
@@ -1145,8 +1121,8 @@ void CGCalendar::SetFilter(CVar* var, int32_t value) {
 
         month = (month + 1) % 12;
 
-        if (!month && ++year >= 31) {
-            break;
+        if (!month) {
+            ++year;
         }
     }
 }
@@ -1407,14 +1383,14 @@ void CGCalendar::CalculateEvents(bool signal) {
             WowTime::WowDecodeTime(node->m_endTime, &end);
 
             if (end.m_year == -1) {
-                end.m_year = 31;
+                end.m_year = 0x7FFFFFFF;
             }
 
             if (!(start < rangeEnd)) {
                 continue;
             }
 
-            while (start.m_year < 31) {
+            while (true) {
                 uint32_t startTime;
                 uint32_t endTime;
                 WowTime::WowEncodeTime(startTime, &start);

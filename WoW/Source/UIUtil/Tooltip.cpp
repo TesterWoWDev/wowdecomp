@@ -73,6 +73,11 @@
 #include "WoW/Source/Ui/ReputationInfo.h"
 #include "WoW/Source/Ui/TalentInfo.h"
 #include "WoW/Source/WorldClient/AreaList.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/ItemDifficultyText.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalCostData.h"
+#include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
+#include "WoW/Source/Duskhaven/Tooltip/SpellTooltipExtensions.h"
 #include <cstdio>
 #include <cstdlib>
 #include "Engine/Source/Frame/CBackdropGenerator.h"
@@ -2595,11 +2600,18 @@ void CGTooltip::AddTalentLearnText(const TalentRec* talent, CGTalentGroup_C* gro
 
 // INLINED
 static int32_t SetSpellPowerCost(char* cost, const SpellRec* spell, const CGUnit_C* caster, int32_t powerCost, const PowerDisplayRec* display) {
+    if (spell && Duskhaven::HasAttribute(spell, Duskhaven::SPELL_ATTR2_CU_DO_NOT_DISPLAY_POWER_COST)) {
+        cost[0] = '\0';
+        return 0;
+    }
+
     char format[128];
     int32_t costPerSecond = Spell_C_GetPowerCostPerSecond(spell, caster);
     powerCost = static_cast<uint32_t>(powerCost) / Spell_C_GetPowerDisplayMod(spell->m_powerType);
     costPerSecond = static_cast<uint32_t>(costPerSecond) / Spell_C_GetPowerDisplayMod(spell->m_powerType);
     const char* token = static_cast<uint32_t>(spell->m_powerType) > 6 ? "HEALTH_COST" : s_powerCostTokens[spell->m_powerType];
+
+    SpellAdditionalCostDataRow* addCost = spell ? SpellAdditionalCostDataDB::Get(spell->m_id) : nullptr;
 
     if (spell->m_powerType == 5) {
         SpellRuneCostRec* runes = g_spellRuneCostDB.GetRecord(spell->m_runeCostID);
@@ -2634,7 +2646,18 @@ static int32_t SetSpellPowerCost(char* cost, const SpellRec* spell, const CGUnit
         return powerCost;
     }
 
-    if (powerCost > 0 && costPerSecond <= 0) {
+    if (powerCost > 0 && addCost && addCost->maximumAdditionalSpend > 0 && costPerSecond <= 0) {
+        uint32_t maxSpend = static_cast<uint32_t>(powerCost) + static_cast<uint32_t>(addCost->maximumAdditionalSpend);
+        const char* rName = addCost->resourceName ? addCost->resourceName : "";
+        if (maxSpend != 1 && addCost->resourceNamePlural && addCost->resourceNamePlural[0]) {
+            rName = addCost->resourceNamePlural;
+        }
+
+        SStrPrintf(cost, 128, "%d to %u %s", powerCost, maxSpend, rName);
+        if (maxSpend != 1 && (!addCost->resourceNamePlural || !addCost->resourceNamePlural[0]) && (addCost->flags & SpellAdditionalCostFlags::PluralizeResourceName)) {
+            SStrPack(cost, "s", 128);
+        }
+    } else if (powerCost > 0 && costPerSecond <= 0) {
         if (display) {
             SStrCopy(format, FrameScript_GetText(display->m_globalStringBaseTag, -1, GENDER_NOT_APPLICABLE), sizeof(format));
             SStrPrintf(cost, 128, FrameScript_GetText("POWER_DISPLAY_COST", -1, GENDER_NOT_APPLICABLE), powerCost, format);
@@ -2649,6 +2672,24 @@ static int32_t SetSpellPowerCost(char* cost, const SpellRec* spell, const CGUnit
         } else {
             SStrPrintf(format, sizeof(format), "%s_PER_TIME", token);
             SStrPrintf(cost, 128, FrameScript_GetText(format, -1, GENDER_NOT_APPLICABLE), powerCost, costPerSecond);
+        }
+    }
+
+    if (addCost && addCost->cost > 0) {
+        if (cost[0] != '\0') {
+            SStrPack(cost, " + ", 128);
+        }
+
+        const char* rName = addCost->resourceName ? addCost->resourceName : "";
+        if (addCost->cost != 1 && addCost->resourceNamePlural && addCost->resourceNamePlural[0]) {
+            rName = addCost->resourceNamePlural;
+        }
+
+        char addBuf[128];
+        SStrPrintf(addBuf, sizeof(addBuf), "%d %s", addCost->cost, rName);
+        SStrPack(cost, addBuf, 128);
+        if (addCost->cost != 1 && (!addCost->resourceNamePlural || !addCost->resourceNamePlural[0]) && (addCost->flags & SpellAdditionalCostFlags::PluralizeResourceName)) {
+            SStrPack(cost, "s", 128);
         }
     }
 
@@ -2758,6 +2799,10 @@ static int32_t AddSpellCastTimeLine(CGTooltip* tooltip, const SpellRec* spell, i
     }
 
     int32_t time = SpellRec::GetCastTime(spell, isPet, isInspect, 1);
+    if (time > 0 && spell && (Duskhaven::HasAttribute(spell, Duskhaven::SPELL_ATTR2_CU_TREAT_AS_INSTANT) ||
+                             (time < 1000 && Duskhaven::HasAttribute(spell, Duskhaven::SPELL_ATTR2_CU_LOW_TIME_TREAT_AS_INSTANT)))) {
+        time = -1;
+    }
     int32_t minutes = time >= 60000;
 
     if (time > 0) {
@@ -2777,13 +2822,7 @@ static int32_t AddSpellCastTimeLine(CGTooltip* tooltip, const SpellRec* spell, i
         FormatString("SPELL_CAST_TIME_INSTANT_NO_MANA", -1, GENDER_NOT_APPLICABLE, castTime, sizeof(castTime));
     }
 
-    if (cooldown <= 0 || (spell->m_attributesExF & 1)) {
-        recastTime[0] = '\0';
-    } else {
-        int32_t recastMinutes = cooldown >= 60000;
-        FormatString(recastMinutes ? "SPELL_RECAST_TIME_MIN" : "SPELL_RECAST_TIME_SEC", -1, GENDER_NOT_APPLICABLE, format, sizeof(format));
-        SStrPrintf(recastTime, sizeof(recastTime), format, cooldown / (recastMinutes ? 60000.0f : 1000.0f));
-    }
+    Duskhaven::Tooltip::FormatSpellCooldown(spell, cooldown, recastTime, sizeof(recastTime));
 
     tooltip->AddLine(castTime, recastTime, textColor, textColor, 0);
     return 0;
@@ -3284,6 +3323,7 @@ int32_t CGTooltip::SetSpell(int32_t spellId, int32_t brief, uint32_t cooldown, i
 
     int32_t result = 0;
 
+    cooldown = Duskhaven::Tooltip::GetSpellRemainingCooldown(spell.m_id, cooldown);
     if (cooldown) {
         CGTooltip::GetDurationString(text, sizeof(text), cooldown, "ITEM_COOLDOWN_TIME", nullptr, 1, 0);
         this->AddLine(text, nullptr, textColor, textColor, 0);
@@ -6477,6 +6517,15 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
     }
 
     AddItemNameLines(this, stats, itemId, randomPropertiesId, nameOnly, append, destroyGem);
+
+    if (!nameOnly) {
+        ItemDifficultyTextRow* diffRow = ItemDifficultyTextDB::Get(itemId);
+        if (diffRow && diffRow->text && *diffRow->text) {
+            CImVector diffColor;
+            diffColor.Set(1.0f, diffRow->red, diffRow->green, diffRow->blue);
+            this->AddLine(diffRow->text, nullptr, diffColor, diffColor, 0);
+        }
+    }
 
     if (item && !AddItemPetitionLines(this, item, itemGuid)) {
         return 0;

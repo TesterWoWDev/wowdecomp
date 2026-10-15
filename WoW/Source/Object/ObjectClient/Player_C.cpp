@@ -11,6 +11,7 @@
 #include "Engine/Source/Tempest/CMath.h"
 #include "Engine/Source/Tempest/CRandom.h"
 #include "WoW/Common/ComponentCore/CharacterComponent.h"
+#include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/Client.h"
 #include "WoW/Source/DB/DBClient/DBCacheInstances.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
@@ -40,6 +41,8 @@
 #include "WoW/Source/Net/Types.h"
 #include "WoW/Source/Object/CGPetition.h"
 #include "WoW/Source/Object/ItemStats.h"
+#include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
 #include "WoW/Source/Object/ObjectClient/Effect_C.h"
 #include "WoW/Source/Object/ObjectClient/GameObject_C.h"
 #include "WoW/Source/Object/ObjectClient/Item_C.h"
@@ -2190,6 +2193,13 @@ bool CGPlayer_C::UnitIsTrivial(const CGUnit_C* unit) {
 const VisibleItem_C* CGPlayer_C::GetVisibleItem(int32_t slot) const {
     if (slot < 0 || slot >= 19) {
         return nullptr;
+    }
+
+    if (this->m_obj && this->m_obj->m_guid.m_guid) {
+        const VisibleItem_C* overrideItem = Duskhaven::VisibleItemOverrides::GetOverrideItem(this->m_obj->m_guid.m_guid, slot);
+        if (overrideItem) {
+            return overrideItem;
+        }
     }
 
     return &this->m_player->m_playerVisibleItems[slot];
@@ -7984,7 +7994,10 @@ void CGPlayer_C::DelKnownSpell(int32_t spellId, int32_t a3) {
             this->RemoveEquipBypassSkill(spellId);
         }
 
-        if (notify && !(spell.m_attributes & 0x80)) {
+        auto* customAttr = Duskhaven::SpellAdditionalAttributesDB::Get(spellId);
+        bool suppressUnlearn = customAttr && (customAttr->customAttr2 & Duskhaven::SPELL_ATTR2_CU_SUPPRESS_UNLEARN_MSG);
+
+        if (notify && !(spell.m_attributes & 0x80) && !suppressUnlearn) {
             if (*spell.m_nameSubtext) {
                 char text[512];
                 SStrPrintf(text, sizeof(text), "%s (%s)", spell.m_name, spell.m_nameSubtext);
@@ -10317,6 +10330,8 @@ void CGPlayer_C::EquipVisibleItem(const VisibleItem_C* item, int32_t slot) {
     if (!item || !abs(item->m_itemId) || static_cast<int32_t>(const_cast<VisibleItem_C*>(item)->GetDisplayID()) <= 0) {
         return;
     }
+
+    Duskhaven::VisibleItemOverrides::ScopedContext context(this->m_obj ? this->m_obj->m_guid.m_guid : 0);
 
     switch (slot) {
         case 15:

@@ -8,6 +8,7 @@
 #include "Engine/Source/Storm/H/storm.h"
 #include "Engine/Source/Tempest/CRandom.h"
 #include "WoW/Common/ComponentCore/CharacterComponent.h"
+#include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
 #include "WoW/Source/DB/Rec/CharBaseInfoRec.h"
 #include "WoW/Source/DB/Rec/CharStartOutfitRec.h"
@@ -420,6 +421,8 @@ void CCharacterCreation::Dress() {
         CharacterSelectionDisplay* display = CCharacterSelection::GetCharacterDisplay(CCharacterCreation::m_existingCharacterIndex);
 
         if (display) {
+            Duskhaven::VisibleItemOverrides::ScopedContext context(display->m_characterInfo.m_guid.m_guid);
+
             for (uint32_t slot = 0; slot < 23; slot++) {
                 int32_t displayID = display->m_characterInfo.m_inventoryItemDisplayID[slot];
                 int32_t itemVisual = display->m_characterInfo.m_inventoryItemVisualID[slot];

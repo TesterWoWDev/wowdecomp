@@ -1964,6 +1964,63 @@ static int32_t Script_IsIgnoringDepth(lua_State* L) {
     return 1;
 }
 
+static int32_t Script_SetChildClipping(lua_State* L) {
+    CSimpleFrame* frame = nullptr;
+    int32_t enabled = 1;
+
+    if (lua_isnumber(L, 2) || lua_isboolean(L, 2)) {
+        enabled = lua_isboolean(L, 2) ? lua_toboolean(L, 2) : (lua_tonumber(L, 2) != 0.0);
+    }
+
+    if (lua_isstring(L, 1)) {
+        frame = static_cast<CSimpleFrame*>(CScriptObject::GetScriptObjectByName(lua_tolstring(L, 1, nullptr), CSimpleFrame::GetObjectType()));
+    } else if (lua_type(L, 1) == LUA_TTABLE) {
+        lua_rawgeti(L, 1, 0);
+        frame = static_cast<CSimpleFrame*>(lua_touserdata(L, -1));
+        lua_settop(L, -2);
+        if (frame && !frame->IsA(CSimpleFrame::GetObjectType())) {
+            frame = nullptr;
+        }
+    }
+
+    if (!frame) {
+        frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, CSimpleFrame::GetObjectType()));
+        if (lua_isnumber(L, 1) || lua_isboolean(L, 1)) {
+            enabled = lua_isboolean(L, 1) ? lua_toboolean(L, 1) : (lua_tonumber(L, 1) != 0.0);
+        }
+    }
+
+    if (!frame) {
+        luaL_error(L, "Usage: SetFrameChildClipping(frame, enabled)");
+        return 0;
+    }
+
+    frame->SetChildClipping(enabled);
+    return 0;
+}
+
+static int32_t Script_GetChildClipping(lua_State* L) {
+    CSimpleFrame* frame = nullptr;
+
+    if (lua_isstring(L, 1)) {
+        frame = static_cast<CSimpleFrame*>(CScriptObject::GetScriptObjectByName(lua_tolstring(L, 1, nullptr), CSimpleFrame::GetObjectType()));
+    } else if (lua_type(L, 1) == LUA_TTABLE) {
+        lua_rawgeti(L, 1, 0);
+        frame = static_cast<CSimpleFrame*>(lua_touserdata(L, -1));
+        lua_settop(L, -2);
+        if (frame && !frame->IsA(CSimpleFrame::GetObjectType())) {
+            frame = nullptr;
+        }
+    }
+
+    if (!frame) {
+        frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, CSimpleFrame::GetObjectType()));
+    }
+
+    lua_pushboolean(L, frame && frame->GetChildClipping());
+    return 1;
+}
+
 // VERIFY: e54f54a8 auto
 // OFFSET: 0x004A1E60
 void CSimpleFrame::CreateScriptMetaTable() {
@@ -2064,9 +2121,12 @@ static FrameScript_Method s_ScriptMethods[] = {
     { "GetEffectiveDepth", &Script_GetEffectiveDepth },
     { "IgnoreDepth", &Script_IgnoreDepth },
     { "IsIgnoringDepth", &Script_IsIgnoringDepth },
+    { "SetChildClipping", &Script_SetChildClipping },
+    { "GetChildClipping", &Script_GetChildClipping },
+    { "SetFrameChildClipping", &Script_SetChildClipping },
+    { "GetFrameChildClipping", &Script_GetChildClipping },
 };
 
-// VERIFY: c7ad299d auto
 // OFFSET: 0x0049E540
 void CSimpleFrame::RegisterScriptMethods(lua_State* L) {
     CScriptRegion::RegisterScriptMethods(L);

@@ -37,6 +37,8 @@
 #include "WoW/Source/Ui/WorldFrame.h"
 #include "WoW/Source/WorldClient/Map.h"
 #include "WoW/Source/DB/Rec/SpellMissileMotionRec.h"
+#include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
 
 // STATIC: 0x00CA0B58
 CMissile* CMissile::s_inFlightMissileList;
@@ -1971,6 +1973,41 @@ void CMissile::FireMissiles(const C3Vector* position) {
     this->DetermineMissType();
     this->m_launchPos = *position;
     this->m_position = *position;
+
+    auto* customAttr = this->m_spellID ? Duskhaven::SpellAdditionalAttributesDB::Get(this->m_spellID) : nullptr;
+    bool hasDelayAttr = (customAttr && (customAttr->customAttr1 & Duskhaven::SPELL_ATTR1_CU_MISSILE_SPEED_IS_DELAY_IN_SEC));
+    bool convertedDelaySpeed = false;
+
+    if (hasDelayAttr) {
+        float delaySeconds = this->m_speed;
+        if (std::isfinite(delaySeconds) && delaySeconds > 0.001f) {
+            C3Vector impact = this->TransformPositionByTransport();
+            float dx = impact.x - position->x;
+            float dy = impact.y - position->y;
+            float dz = impact.z - position->z;
+            float dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist > 0.0001f) {
+                float convertedSpeed = dist / delaySeconds;
+                if (std::isfinite(convertedSpeed) && convertedSpeed > 0.001f) {
+                    this->m_speed = convertedSpeed;
+                    this->m_baseSpeed = convertedSpeed;
+                    convertedDelaySpeed = true;
+                }
+            }
+        }
+    }
+
+    if (!std::isfinite(this->m_speed) || this->m_speed <= 0.001f || (hasDelayAttr && !convertedDelaySpeed)) {
+        SpellRec spellRec;
+        float fallbackSpeed = 24.0f;
+        if (this->m_spellID && g_spellDB.GetRecord(this->m_spellID, &spellRec)) {
+            if (std::isfinite(spellRec.m_speed) && spellRec.m_speed > 0.001f && !hasDelayAttr) {
+                fallbackSpeed = spellRec.m_speed;
+            }
+        }
+        this->m_speed = fallbackSpeed;
+        this->m_baseSpeed = fallbackSpeed;
+    }
     this->Link(&CMissile::s_inFlightMissileList);
 
     if (this->m_flags & 0x10000) {

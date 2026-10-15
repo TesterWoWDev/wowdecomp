@@ -23,6 +23,7 @@
 #include "Engine/Source/Tempest/CMath.h"
 #include "Engine/Source/Tempest/CWFrustum.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
+#include "WoW/Source/Duskhaven/Camera/CameraFade.h"
 #include "WoW/Source/DB/Rec/VehicleRec.h"
 #include "WoW/Source/Object/CMoveSpline.h"
 #include "WoW/Source/Object/Movement.h"
@@ -3717,7 +3718,7 @@ uint32_t CGCamera::CollideCameraWithWorld(const C3Vector& target, float& distanc
 
         float hitDistance = 1.0f;
 
-        if (World::Intersect(base, end, &hit, &hitDistance, flags, nullptr)) {
+        if (Duskhaven::CameraFade::IntersectCamera(base, end, &hit, &hitDistance, flags)) {
             result |= 0x10000;
             distance = distance * hitDistance;
         }

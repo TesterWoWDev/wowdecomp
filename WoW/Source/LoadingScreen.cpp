@@ -567,6 +567,12 @@ static void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visi
     *reinterpret_cast<uint32_t*>(&black) = 0xFF000000;
     GxSceneClear(1, black);
 
+    float currentAspect = CoordinateGetAspectRatio();
+    if (currentAspect >= s_normalAspect) {
+        s_wideAspect = currentAspect;
+        s_usingWideScreen = true;
+    }
+
     float aspect = CoordinateGetAspectCompensation();
     float ratio = s_usingWideScreen ? s_wideAspect / s_normalAspect : 1.0f;
     float scale = aspect / ratio;
@@ -953,6 +959,12 @@ static void LoadingScreenMiniPaint(void* param, const RECTF* rect, const RECTF* 
     GxXformViewport(minX, maxX, minY, maxY, minZ, maxZ);
 
     GxXformSetViewport(0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+
+    float currentAspect = CoordinateGetAspectRatio();
+    if (currentAspect >= s_normalAspect) {
+        s_wideAspect = currentAspect;
+        s_usingWideScreen = true;
+    }
 
     float aspect = CoordinateGetAspectCompensation();
     float ratio = s_usingWideScreen ? s_wideAspect / s_normalAspect : 1.0f;

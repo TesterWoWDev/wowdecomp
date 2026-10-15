@@ -115,6 +115,7 @@ class CSimpleFrame : public CScriptRegion {
     /* 0284 */ TSLink<CSimpleFrame> m_framesLink;
     /* 028C */ TSLink<CSimpleFrame> m_destroyedLink;
     /* 0294 */ TSLink<CSimpleFrame> m_strataLink;
+    int32_t m_clipChildren;
 
     virtual ~CSimpleFrame();
     virtual int32_t GetScriptMetaTable();
@@ -209,6 +210,9 @@ class CSimpleFrame : public CScriptRegion {
     void SetAttribute(const char* name, int32_t luaRef);
     void SetBackdrop(CBackdropGenerator* backdrop);
     void SetBeingScrolled(int32_t scrolled, int32_t a3);
+    void SetChildClipping(int32_t clip);
+    int32_t GetChildClipping() const;
+    static void RenderClippedChildren(void* param);
     void SetClampRectInsets(float left, float right, float top, float bottom);
     void SetFrameAlpha(uint8_t alpha);
     bool SetFrameDepth(float depth, bool force);

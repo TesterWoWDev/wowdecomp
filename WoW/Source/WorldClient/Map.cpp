@@ -21,6 +21,7 @@
 #include "Engine/Source/Model2/M2Light.h"
 #include "Engine/Source/Model2/M2Model.h"
 #include "Engine/Source/Model2/M2Scene.h"
+#include "WoW/Source/Duskhaven/Camera/CameraFade.h"
 #include "Engine/Source/Os/Processor.h"
 #include "Engine/Source/Os/System.h"
 #include "Engine/Source/Os/TimeManager.h"
@@ -1201,6 +1202,11 @@ void CMap::VectorIntersectDoodadDefs(TSList<CMapBaseObjLink, TSGetExplicitLink<C
         }
 
         if ((doodadDef->m_flags & 0x100) || !(doodadDef->m_flags & 0x80) || doodadDef->m_unkCounter == CMap::s_queryTag) {
+            continue;
+        }
+
+        if (Duskhaven::CameraFade::IsCollisionCheckActive() && doodadDef->m_model && Duskhaven::CameraFade::IsModelCurrent(doodadDef->m_model)) {
+            doodadDef->m_unkCounter = CMap::s_queryTag;
             continue;
         }
 

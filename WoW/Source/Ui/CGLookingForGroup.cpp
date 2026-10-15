@@ -23,6 +23,7 @@
 #include "WoW/Source/Ui/ChatFrame.h"
 #include "Engine/Source/FrameScript/FrameScript.h"
 #include "Engine/Source/FrameXML/LoadXML.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/LFGRoles.h"
 
 // STATIC: 0x00A394B0
 static const uint8_t s_classRoles[11] = { 0x0B, 0x0F, 0x09, 0x09, 0x0D, 0x0B, 0x0D, 0x09, 0x09, 0x00, 0x0F };
@@ -36,7 +37,16 @@ static float s_lastJoinTime;
 // VERIFY: 7da483d6 auto
 // OFFSET: 0x00552940
 uint8_t CGLookingForGroup::GetClassRoles(uint32_t classID) {
-    return s_classRoles[classID - 1];
+    auto* custom = Duskhaven::LFGRolesDB::Get(classID);
+    if (custom) {
+        return static_cast<uint8_t>(custom->Roles);
+    }
+
+    if (classID >= 1 && classID <= 11) {
+        return s_classRoles[classID - 1];
+    }
+
+    return 0;
 }
 
 // VERIFY: 29999d79 manual

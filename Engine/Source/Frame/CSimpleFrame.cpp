@@ -26,6 +26,8 @@
 #include "Engine/Source/FrameXML/LoadXML.h"
 #include "Engine/Source/FrameXML/XMLTree.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
+#include "Engine/Source/Gx/Gx.h"
+#include "Engine/Source/Services/Camera.h"
 #include "Engine/Source/Storm/H/storm.h"
 #include "Engine/Source/Tempest/CRect.h"
 #include "Engine/Source/lua-5.1/src/lauxlib.h"
@@ -209,6 +211,7 @@ CSimpleFrame::CSimpleFrame(CSimpleFrame* parent) {
     this->m_isLoading = 0;
     this->m_backdropGenerator = nullptr;
     this->m_batchDirty = 0;
+    this->m_clipChildren = 0;
 
     CSimpleFrame::s_frameCount++;
 
@@ -1463,6 +1466,10 @@ void CSimpleFrame::OnFrameRender(CRenderBatch* batch, uint32_t layer) {
     for (CSimpleRegion* region = this->m_drawLayers[layer].Head(); region; region = this->m_drawLayers[layer].Next(region)) {
         region->Draw(batch);
     }
+
+    if (layer == 4 && this->m_clipChildren) {
+        batch->QueueCallback(&CSimpleFrame::RenderClippedChildren, this);
+    }
 }
 
 // VERIFY: 25e7b1ac manual
@@ -1531,6 +1538,9 @@ void CSimpleFrame::LockHighlight(int32_t lock) {
 void CSimpleFrame::ParentFrame(CSimpleFrame* child) {
     SIMPLEFRAMENODE* node = this->m_children.NewNode(2, 0, 0);
     node->m_frame = child;
+    if (this->m_clipChildren) {
+        child->SetBeingScrolled(1, 1);
+    }
 }
 
 // VERIFY: c03a9cc6 auto
@@ -1666,6 +1676,9 @@ void CSimpleFrame::SetFrameLevel(int32_t level, int32_t shiftChildren) {
 void CSimpleFrame::UnparentFrame(CSimpleFrame* child) {
     for (SIMPLEFRAMENODE* node = this->m_children.Head(); node; node = this->m_children.Next(node)) {
         if (node->m_frame == child) {
+            if (this->m_clipChildren) {
+                child->SetBeingScrolled(0, 0);
+            }
             this->m_children.DeleteNode(node);
             break;
         }
@@ -2386,3 +2399,106 @@ void CSimpleFrame::LoadXML(XMLNode* node, CStatus* status) {
         }
     }
 }
+
+void CSimpleFrame::SetChildClipping(int32_t clip) {
+    if (this->m_clipChildren == clip) {
+        return;
+    }
+
+    this->m_clipChildren = clip;
+    for (SIMPLEFRAMENODE* node = this->m_children.Head(); node; node = this->m_children.Next(node)) {
+        if (node->m_frame) {
+            node->m_frame->SetBeingScrolled(clip ? 1 : 0, clip ? 1 : 0);
+        }
+    }
+}
+
+int32_t CSimpleFrame::GetChildClipping() const {
+    return this->m_clipChildren;
+}
+
+void CSimpleFrame::RenderClippedChildren(void* param) {
+    CSimpleFrame* parent = static_cast<CSimpleFrame*>(param);
+    if (!parent) {
+        return;
+    }
+
+    CRect rect = { 0.0f, 0.0f, 0.0f, 0.0f };
+    if (!parent->GetHitRect(rect)) {
+        return;
+    }
+
+    for (SIMPLEFRAMENODE* node = parent->m_children.Head(); node; node = parent->m_children.Next(node)) {
+        CSimpleFrame* child = node->m_frame;
+        if (!child || !child->m_isVisible) {
+            continue;
+        }
+
+        C44Matrix projection;
+        C44Matrix view;
+        CGxDevice* device = g_theGxDevicePtr;
+        projection = device->m_projection;
+        view = device->m_xforms[GxXform_View].m_mtx[device->m_xforms[GxXform_View].m_level];
+
+        float minX, maxX, minY, maxY, minZ, maxZ;
+        GxXformViewport(minX, maxX, minY, maxY, minZ, maxZ);
+
+        float left = 0.0f;
+        float bottom = 0.0f;
+        float right = 0.0f;
+        float top = 0.0f;
+        NDCToDDC(minX, minY, &left, &bottom);
+        NDCToDDC(maxX, maxY, &right, &top);
+
+        CRect clipRect = rect;
+        if (left > clipRect.minX) {
+            clipRect.minX = left;
+        }
+        if (right < clipRect.maxX) {
+            clipRect.maxX = right;
+        }
+        if (bottom > clipRect.minY) {
+            clipRect.minY = bottom;
+        }
+        if (top < clipRect.maxY) {
+            clipRect.maxY = top;
+        }
+
+        if (clipRect.minX >= clipRect.maxX || clipRect.minY >= clipRect.maxY) {
+            continue;
+        }
+
+        C2Vector offset = { 0.0f, 0.0f };
+        CameraSetupScreenProjection(clipRect, offset, 0.0f, 0);
+
+        DDCToNDC(clipRect.minX, clipRect.minY, &clipRect.minX, &clipRect.minY);
+        DDCToNDC(clipRect.maxX, clipRect.maxY, &clipRect.maxX, &clipRect.maxY);
+
+        if (clipRect.minX < 0.0f) {
+            clipRect.maxX = clipRect.maxX - clipRect.minX;
+            clipRect.minX = 0.0f;
+        }
+        if (clipRect.maxX > 1.0f) {
+            clipRect.minX = clipRect.minX - (clipRect.maxX - 1.0f);
+            clipRect.maxX = 1.0f;
+        }
+        if (clipRect.minY < 0.0f) {
+            clipRect.maxY = clipRect.maxY - clipRect.minY;
+            clipRect.minY = 0.0f;
+        }
+        if (clipRect.maxY > 1.0f) {
+            clipRect.minY = clipRect.minY - (clipRect.maxY - 1.0f);
+            clipRect.maxY = 1.0f;
+        }
+
+        if (clipRect.minX < clipRect.maxX && clipRect.minY < clipRect.maxY) {
+            GxXformSetViewport(clipRect.minX, clipRect.maxX, clipRect.minY, clipRect.maxY, 0.0f, 1.0f);
+            child->OnFrameRender();
+        }
+
+        GxXformSetProjection(projection);
+        GxXformSetView(view);
+        GxXformSetViewport(minX, maxX, minY, maxY, minZ, maxZ);
+    }
+}
+

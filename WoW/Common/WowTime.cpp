@@ -158,10 +158,6 @@ bool WowTime::SetDate(uint32_t month, uint32_t monthDay, uint32_t year) {
         year -= 2000;
     }
 
-    if (year > 31) {
-        return false;
-    }
-
     this->m_month = month;
     this->m_monthDay = monthDay;
     this->m_year = year;
@@ -356,7 +352,8 @@ bool WowTime::operator==(const WowTime& time) const {
 // VERIFY: 464da28b auto
 // OFFSET: 0x0076C910
 void WowTime::WowEncodeTime(uint32_t& value, int32_t minute, int32_t hour, int32_t weekDay, int32_t monthDay, int32_t month, int32_t year, int32_t flags) {
-    value = minute & 0x3F | ((hour & 0x1F | ((weekDay & 7 | ((monthDay & 0x3F | ((month & 0xF | ((year & 0x1F | ((flags & 3) << 5)) << 4)) << 6)) << 3)) << 5)) << 6);
+    int32_t clampedYear = year >= 31 ? 31 : (year & 0x1F);
+    value = (minute & 0x3F) | (((hour & 0x1F) | (((weekDay & 7) | (((monthDay & 0x3F) | (((month & 0xF) | (((clampedYear & 0x1F) | ((flags & 3) << 5)) << 4)) << 6)) << 3)) << 5)) << 6);
 }
 
 // VERIFY: d693ecf3 auto
@@ -401,7 +398,8 @@ void WowTime::WowDecodeTime(uint32_t value, int32_t* minute, int32_t* hour, int3
 // VERIFY: 0e001625 auto
 // OFFSET: 0x0076CA50
 void WowTime::WowEncodeTime(uint32_t& value, const WowTime* time) {
-    value = time->m_minute & 0x3F | ((time->m_hour & 0x1F | ((time->m_weekDay & 7 | ((time->m_monthDay & 0x3F | ((time->m_month & 0xF | ((time->m_year & 0x1F | ((time->m_flags & 3) << 5)) << 4)) << 6)) << 3)) << 5)) << 6);
+    int32_t clampedYear = time->m_year >= 31 ? 31 : (time->m_year & 0x1F);
+    value = (time->m_minute & 0x3F) | (((time->m_hour & 0x1F) | (((time->m_weekDay & 7) | (((time->m_monthDay & 0x3F) | (((time->m_month & 0xF) | (((clampedYear & 0x1F) | ((time->m_flags & 3) << 5)) << 4)) << 6)) << 3)) << 5)) << 6);
 }
 
 // VERIFY: 847111ea auto

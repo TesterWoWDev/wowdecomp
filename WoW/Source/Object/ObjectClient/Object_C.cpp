@@ -48,6 +48,7 @@
 #include "WoW/Source/DB/Rec/SpellVisualEffectNameRec.h"
 #include "WoW/Source/DB/Rec/SpellVisualKitModelAttachRec.h"
 #include "WoW/Source/DB/Rec/SpellRec.h"
+#include "WoW/Source/Duskhaven/Spells/SpellVisualKitBridge.h"
 
 // STATIC: 0x00ADAC98
 CGObject_C::InteractIcon CGObject_C::s_interactIcons[12] = {
@@ -1834,6 +1835,8 @@ attachments:
     }
 
     this->PlaySpellVisualKit_PlayAnims(data.m_spellRec, data.m_impactVisualKit, static_cast<SPELL_VISUAL_KIT_TYPE>(data.unk_0008), position, animParam, data.unk_001C, data.m_someGUID, data.unk_0030, visual, flags, hasEffect);
+
+    Duskhaven::SpellVisualKitBridge::PlayExtraEffects(this, data.m_impactVisualKit->m_id);
 }
 
 // VERIFY: 1d3e05cf auto

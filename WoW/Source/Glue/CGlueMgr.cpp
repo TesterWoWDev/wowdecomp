@@ -1,4 +1,5 @@
 #include "CGlueMgr.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
@@ -713,6 +714,7 @@ void CGlueMgr::Resume() {
     SI2::RegisterScriptFunctions();
     AccountMsg_RegisterScriptFunctions();
     CGVideoOptions::RegisterScriptFunctions();
+    Duskhaven::RegisterScriptFunctions();
     CGlueMgr::s_scriptFunctionsLoaded = 1;
     FrameScript_CreateEvents(g_glueScriptEvents, sizeof(g_glueScriptEvents) / sizeof(g_glueScriptEvents[0]));
 

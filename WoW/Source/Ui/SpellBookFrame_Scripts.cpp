@@ -26,6 +26,8 @@
 #include "WoW/Source/WowSvcs/WowSvcsClient/ClientServices.h"
 #include "WoW/Source/Net/Types.h"
 #include "Engine/Source/Base/CDataStore.h"
+#include "Engine/Source/Storm/H/storm.h"
+#include "WoW/Source/Duskhaven/Spells/SpellTargeting.h"
 
 // STATIC: 0x00ACCCC4
 const char* s_companionTypes[2] = { "CRITTER", "MOUNT" };
@@ -1062,10 +1064,28 @@ static int32_t Script_CastSpellByName(lua_State* L) {
         return 0;
     }
 
+    const char* targetToken = lua_tolstring(L, 2, nullptr);
+    bool castAtCursor = false;
+    bool castAtSelf = false;
+
+    if (targetToken) {
+        if (!SStrCmpI(targetToken, "cursor", 6)) {
+            castAtCursor = true;
+            targetToken = nullptr;
+        } else if (!SStrCmpI(targetToken, "self", 4)) {
+            castAtSelf = true;
+            targetToken = nullptr;
+        }
+    }
+
     WOWGUID target;
 
-    if (!Script_GetGUIDFromToken(lua_tolstring(L, 2, nullptr), target, true)) {
+    if (targetToken && !Script_GetGUIDFromToken(targetToken, target, true)) {
         return 0;
+    }
+
+    if (castAtCursor) {
+        Duskhaven::Spells::s_castAtCursor = true;
     }
 
     const char* name = lua_tolstring(L, 1, nullptr);
@@ -1081,18 +1101,22 @@ static int32_t Script_CastSpellByName(lua_State* L) {
 
         if (slot >= 0) {
             CGSpellBook::CastSpell(slot, petSpell, target);
-            return 0;
+        } else {
+            PetAction* action = CGPetInfo::FindSpellByID(spellId);
+
+            if (action) {
+                CGPetInfo::SendPetAction(*action, target, 0);
+            } else if (!petSpell) {
+                Spell_C_ClickSpell(spellId, nullptr, target);
+            }
         }
 
-        PetAction* action = CGPetInfo::FindSpellByID(spellId);
-
-        if (action) {
-            CGPetInfo::SendPetAction(*action, target, 0);
-            return 0;
-        }
-
-        if (!petSpell) {
-            Spell_C_ClickSpell(spellId, nullptr, target);
+        if (castAtSelf) {
+            CTerrainClickEvent evt;
+            evt.m_guid = WOWGUID();
+            evt.m_point = player->GetPosition();
+            evt.m_button = MOUSE_BUTTON_LEFT;
+            CGGameUI::HandleTerrainClick(evt);
         }
 
         return 0;

@@ -36,7 +36,7 @@ target_include_directories(WowClient
         ${CMAKE_SOURCE_DIR}
 )
 
-target_link_options(WowClient PRIVATE "/INCREMENTAL:NO" "/ENTRY:start")
+target_link_options(WowClient PRIVATE "/INCREMENTAL:NO" "/ENTRY:start" "/DEBUG" "/MAP:${CMAKE_SOURCE_DIR}/bin/Win/WowClient64.map")
 
 target_link_libraries(WowClient
     PRIVATE
@@ -83,5 +83,6 @@ target_link_libraries(WowClient
         LiquidSystem
         WowServices
         WowSvcs
+        Duskhaven
         dbghelp
 )

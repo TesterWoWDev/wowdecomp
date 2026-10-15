@@ -4419,7 +4419,13 @@ void CGUnit_C::PlayBaseAnimation(uint32_t animId, int32_t flags) {
     if (flags & 0x2) {
         anim = animId;
     } else {
-        if (!(flags & 0x8) && (animId == ANIM_SPECIAL_1H || animId == ANIM_SPECIAL_2H)) {
+        if (this->ShouldPreventMeleeUnsheath()) {
+            if (animId == ANIM_ATTACK_1H || animId == ANIM_ATTACK_2H || animId == ANIM_ATTACK_2HL || animId == ANIM_SPECIAL_1H || animId == ANIM_SPECIAL_2H) {
+                animId = ANIM_ATTACK_UNARMED;
+            } else if (animId == ANIM_ATTACK_OFF || animId == ANIM_ATTACK_OFF_PIERCE) {
+                animId = ANIM_ATTACK_UNARMED_OFF;
+            }
+        } else if (!(flags & 0x8) && (animId == ANIM_SPECIAL_1H || animId == ANIM_SPECIAL_2H)) {
             const CGUnitVirtualItem* mainHand = this->GetVirtualItem(0, false);
             const CGUnitVirtualItem* offHand = this->GetVirtualItem(1, false);
 
@@ -5797,6 +5803,10 @@ int32_t __stdcall CGUnit_C::IsTwoHanded(const CGUnitVirtualItem* item) {
 // VERIFY: 46787e5a auto
 // OFFSET: 0x00714DD0
 uint32_t CGUnit_C::GetCombatReadyAnim() const {
+    if (this->ShouldPreventMeleeUnsheath()) {
+        return ANIM_READY_UNARMED;
+    }
+
     const CGUnitVirtualItem* item = this->GetVirtualItem(0, false);
 
     if (!item || item->m_classID != 2) {
@@ -6244,8 +6254,49 @@ void CGUnit_C::GetCursorFile(int32_t unable, char* buffer, uint32_t size) const 
 // VERIFY: c4fa9258 auto
 // OFFSET: 0x00715F70
 bool CGUnit_C::MountedCombatAllowed() const {
+    uint32_t auraCount = this->GetAuraCount();
+    for (uint32_t i = 0; i < auraCount; ++i) {
+        AuraData* aura = const_cast<CGUnit_C*>(this)->GetAura(i);
+        if (!aura) continue;
+        SpellRec spellRec;
+        if (g_spellDB.GetRecord(aura->m_spellId, &spellRec)) {
+            for (int32_t e = 0; e < 3; ++e) {
+                if (spellRec.m_effectAura[e] == 312) { // SPELL_AURA_COMBAT_MOUNT_ILLUSION
+                    return true;
+                }
+            }
+        }
+    }
+
     if (this->m_creatureCacheEntry) {
         return (this->m_creatureCacheEntry->m_typeFlags >> 11) & 1;
+    }
+
+    return false;
+}
+
+bool CGUnit_C::ShouldPreventMeleeUnsheath() const {
+    if (!this->m_unit) {
+        return false;
+    }
+
+    uint8_t unitClass = this->m_unit->m_unitFieldBytes0[1];
+    if (unitClass != 12) {
+        return false;
+    }
+
+    uint32_t auraCount = this->GetAuraCount();
+    for (uint32_t i = 0; i < auraCount; ++i) {
+        AuraData* aura = const_cast<CGUnit_C*>(this)->GetAura(i);
+        if (!aura) continue;
+        SpellRec spellRec;
+        if (g_spellDB.GetRecord(aura->m_spellId, &spellRec)) {
+            for (int32_t e = 0; e < 3; ++e) {
+                if (spellRec.m_effectAura[e] == 355) { // SPELL_AURA_MONK_UNARMED
+                    return true;
+                }
+            }
+        }
     }
 
     return false;
@@ -14443,6 +14494,10 @@ void CGUnit_C::OnAuraUpdate(CDataStore* msg, bool updateAll) {
 // VERIFY: 80b6ec9d manual
 // OFFSET: 0x00736D30
 void CGUnit_C::SetSheatheState(uint32_t showWeapons, int32_t instant, int32_t noSend) {
+    if (showWeapons == 1 && this->ShouldPreventMeleeUnsheath()) {
+        showWeapons = 0;
+    }
+
     if (this->IsPlayingWeaponAnim()) {
         showWeapons = CGUnit_C::ResolveSheathState(showWeapons, this->GetVirtualItem(0, false), this->GetVirtualItem(1, false));
     }

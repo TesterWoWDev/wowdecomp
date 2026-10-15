@@ -36,6 +36,7 @@
 #include "WoW/Common/ComponentCore/ComponentUtils.h"
 #include "WoW/Common/TextureCache.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
+#include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/DB/Rec/CharHairGeosetsRec.h"
 #include "WoW/Source/DB/Rec/CharSectionsRec.h"
 #include "WoW/Source/DB/Rec/CharacterFacialHairStylesRec.h"
@@ -4007,6 +4008,12 @@ int32_t CCharacterComponent::BuildShoulderItemPaths(ItemDisplayInfoRec& rec, con
 // VERIFY: 9f80d347 auto
 // OFFSET: 0x004EF710
 int32_t CCharacterComponent::AreShoulderModelsCorrect() {
+    int32_t leftShoulderDisplay = -1;
+    int32_t rightShoulderDisplay = -1;
+    if (Duskhaven::VisibleItemOverrides::GetShoulderOverrideForCurrentContext(&leftShoulderDisplay, &rightShoulderDisplay)) {
+        return 0;
+    }
+
     CM2Model* left = this->m_data.m_model->m_attachList;
 
     while (left && left->m_attachmentId != 6) {
@@ -4053,6 +4060,45 @@ void CCharacterComponent::AddShoulders(int32_t itemVisual) {
     char rightModel[260];
     char leftTexture[260];
     char rightTexture[260];
+
+    int32_t leftShoulderDisplay = -1;
+    int32_t rightShoulderDisplay = -1;
+    bool hasOverride = Duskhaven::VisibleItemOverrides::GetShoulderOverrideForCurrentContext(&leftShoulderDisplay, &rightShoulderDisplay);
+
+    if (hasOverride) {
+        // Attachment 6 (Right shoulder)
+        if (rightShoulderDisplay > 0) {
+            ItemDisplayInfoRec rightRec;
+            if (g_itemDisplayInfoDB.GetRecord(rightShoulderDisplay, &rightRec) && *rightRec.m_modelName[0]) {
+                char model[260];
+                char tex[260];
+                snprintf(model, sizeof(model), "Item\\ObjectComponents\\Shoulder\\%s", rightRec.m_modelName[0]);
+                snprintf(tex, sizeof(tex), "Item\\ObjectComponents\\Shoulder\\%s.blp", rightRec.m_modelTexture[0]);
+                CCharacterComponent::AddLink(this->m_data.m_model, static_cast<GEOCOMPONENTLINKS>(6), model, tex, itemVisual, &rightRec);
+            }
+        } else if (rightShoulderDisplay < 0) {
+            if (this->BuildShoulderItemPaths(rec, displayRec, leftModel, rightModel, leftTexture, rightTexture) && leftModel[0]) {
+                CCharacterComponent::AddLink(this->m_data.m_model, static_cast<GEOCOMPONENTLINKS>(6), leftModel, leftTexture, itemVisual, displayRec);
+            }
+        }
+
+        // Attachment 5 (Left shoulder)
+        if (leftShoulderDisplay > 0) {
+            ItemDisplayInfoRec leftRec;
+            if (g_itemDisplayInfoDB.GetRecord(leftShoulderDisplay, &leftRec) && *leftRec.m_modelName[1]) {
+                char model[260];
+                char tex[260];
+                snprintf(model, sizeof(model), "Item\\ObjectComponents\\Shoulder\\%s", leftRec.m_modelName[1]);
+                snprintf(tex, sizeof(tex), "Item\\ObjectComponents\\Shoulder\\%s.blp", leftRec.m_modelTexture[1]);
+                CCharacterComponent::AddLink(this->m_data.m_model, static_cast<GEOCOMPONENTLINKS>(5), model, tex, itemVisual, &leftRec);
+            }
+        } else if (leftShoulderDisplay < 0) {
+            if (this->BuildShoulderItemPaths(rec, displayRec, leftModel, rightModel, leftTexture, rightTexture) && rightModel[0]) {
+                CCharacterComponent::AddLink(this->m_data.m_model, static_cast<GEOCOMPONENTLINKS>(5), rightModel, rightTexture, itemVisual, displayRec);
+            }
+        }
+        return;
+    }
 
     if (!this->BuildShoulderItemPaths(rec, displayRec, leftModel, rightModel, leftTexture, rightTexture)) {
         return;

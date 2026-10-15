@@ -13,6 +13,7 @@
 #include "Engine/Source/Tempest/C44Matrix.h"
 #include "Engine/Source/Tempest/CAaSphere.h"
 #include "WoW/Common/ComponentCore/CharacterComponent.h"
+#include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/Client.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
 #include "WoW/Source/DB/Rec/CreatureDisplayInfoRec.h"
@@ -414,6 +415,8 @@ void CCharacterSelection::ShowCharacter() {
     if (CCharacterSelection::s_selectionIndex < 0 || CCharacterSelection::s_selectionIndex >= static_cast<int32_t>(CCharacterSelection::s_characterList.Count())) {
         return;
     }
+
+    Duskhaven::VisibleItemOverrides::ScopedContext context(CCharacterSelection::s_characterList[CCharacterSelection::s_selectionIndex].m_characterInfo.m_guid.m_guid);
 
     CreatureDisplayInfoRec* displayRec = nullptr;
     CreatureModelDataRec* modelRec = nullptr;

@@ -28,6 +28,12 @@
 #include "Engine/Source/Tempest/C4Vector.h"
 #include "Engine/Source/Tempest/CAaBox.h"
 #include "Engine/Source/Tempest/CImVector.h"
+#include "WoW/Source/Duskhaven/Housing/HousingManager.h"
+#include "WoW/Source/Duskhaven/Spells/SpellTargeting.h"
+#include "WoW/Source/Duskhaven/Spells/DangerZoneVisuals.h"
+#include "WoW/Source/Duskhaven/Spells/ScriptedMissileVisuals.h"
+#include "WoW/Source/Duskhaven/Spells/WeaponTrailPlayback.h"
+#include "WoW/Source/Duskhaven/CVars/DuskhavenCVars.h"
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "WoW/Common/TextureCache.h"
 #include "WoW/Source/Client.h"
@@ -284,6 +290,94 @@ int32_t CGWorldFrame::GetLineSegment(float mouseX, float mouseY, C3Vector* start
     *start += position;
     *end += position;
 
+    if (Spell_C_IsTargeting() && Spell_C_CanTargetTerrain()) {
+        CGPlayer_C* activePlayer = ClntObjMgrGetActivePlayerObj();
+        if (activePlayer) {
+            int32_t targetingSpellId = Spell_C_GetTargetingSpell();
+            if (targetingSpellId) {
+                float minSpellDist = 0.0f, maxSpellDist = 0.0f;
+                Spell_C::GetSpellRange(activePlayer, targetingSpellId, &minSpellDist, &maxSpellDist, nullptr);
+
+                float left = 0.0f, right = maxSpellDist * 3.0f;
+                float bestDist = -1.0f;
+                C3Vector bestPoint, bestPos;
+
+                C3Vector point, pos, hitpoint;
+                float distance = 1.0f;
+                C3Vector playerPos = activePlayer->GetPosition();
+
+                bool shouldCheck = true;
+
+                if (CMap::Intersect(start, end, &hitpoint, &distance, 0x10111, nullptr)) {
+                    HITTESTRESULT test;
+                    test.m_distance = distance;
+                    test.m_point = hitpoint;
+                    this->OnLayerTrackTerrain(test);
+                    shouldCheck = (s_spellShadowStyle != 0);
+                }
+
+                if (!shouldCheck) {
+                    return 1;
+                }
+
+                C3Vector origStart = *start;
+                C3Vector origEnd = *end;
+                C3Vector delta(origEnd.x - origStart.x, origEnd.y - origStart.y, origEnd.z - origStart.z);
+                float lenSq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+                C3Vector dir(0.0f, 0.0f, 0.0f);
+                if (lenSq > 0.0f) {
+                    float invLen = 1.0f / sqrtf(lenSq);
+                    dir = C3Vector(delta.x * invLen, delta.y * invLen, delta.z * invLen);
+                }
+
+                C3Vector camToPlayer(playerPos.x - origStart.x, playerPos.y - origStart.y, playerPos.z - origStart.z);
+                float t = camToPlayer.x * dir.x + camToPlayer.y * dir.y + camToPlayer.z * dir.z;
+
+                if (t > 0.0f) {
+                    origStart = C3Vector(origStart.x + dir.x * t, origStart.y + dir.y * t, origStart.z + dir.z * t);
+                }
+
+                float minDist = maxSpellDist * Duskhaven::CVars::g_spellMinClipDistancePercentage;
+                while (right - left > 0.5f) {
+                    float mid = (left + right) * 0.5f;
+                    point = C3Vector(origStart.x + dir.x * mid, origStart.y + dir.y * mid, origStart.z + dir.z * mid);
+                    pos = C3Vector(point.x, point.y, point.z - 500.0f);
+                    distance = 1.0f;
+
+                    if (CMap::Intersect(&point, &pos, &hitpoint, &distance, 0x10111, nullptr)) {
+                        float dist = activePlayer->GetDistanceToPos(hitpoint);
+
+                        if (dist < minDist * minDist) {
+                            left = mid;
+                            continue;
+                        }
+
+                        HITTESTRESULT test;
+                        test.m_distance = distance;
+                        test.m_point = hitpoint;
+                        this->OnLayerTrackTerrain(test);
+
+                        if (s_spellShadowStyle == 0) {
+                            bestDist = dist;
+                            bestPoint = point;
+                            bestPos = pos;
+                            left = mid;
+                        } else {
+                            right = mid;
+                        }
+                    } else {
+                        right = mid;
+                    }
+                }
+
+                if (bestDist > minDist * minDist) {
+                    *start = bestPoint;
+                    *end = bestPos;
+                }
+            }
+        }
+    }
+
     return 1;
 }
 
@@ -296,6 +390,16 @@ void CGWorldFrame::GetCameraPosition(C3Vector* position) {
 // VERIFY: c8cc818e auto
 // OFFSET: 0x004F66C0
 void CGWorldFrame::OnLayerTrackTerrain(const HITTESTRESULT& result) {
+    if (Duskhaven::Spells::s_castAtCursor) {
+        Duskhaven::Spells::s_castAtCursor = false;
+        CTerrainClickEvent evt;
+        evt.m_guid = WOWGUID();
+        evt.m_point = result.m_point;
+        evt.m_button = MOUSE_BUTTON_LEFT;
+        CGGameUI::HandleTerrainClick(evt);
+        return;
+    }
+
     if (!Spell_C_IsTargeting() || !Spell_C_CanTargetTerrain()) {
         CursorResetMode();
         this->HandleSpriteTrack(WOWGUID());
@@ -1197,6 +1301,8 @@ int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* 
                 this->MoveToFreeList(&this->m_hitModelList);
                 this->m_hitGuid = WOWGUID();
             }
+
+            Duskhaven::Housing::RecordLastMouseHit(result->m_guid, result->m_point, kind >= 2);
         }
     }
 
@@ -1791,6 +1897,7 @@ void CGWorldFrame::OnWorldRender() {
     GxXformSetViewport(minX, maxX, minY, maxY, minZ, maxZ);
     FFX::Finish();
     CVehiclePassenger_C::PostRenderUpdateAll();
+    Duskhaven::WeaponTrailPlayback::OnWorldRender(this);
 }
 
 // VERIFY: 79b17fb9 manual
@@ -2062,6 +2169,8 @@ void CGWorldFrame::OnWorldUpdate() {
     CMissile::UpdateStaticLists();
     Spell_C_ExpireDestLocSpellCasts(FrameTime::s_curTimeMs);
     Spell_C_UpdateInTransitList();
+    Duskhaven::DangerZoneVisuals::Pump();
+    Duskhaven::ScriptedMissileVisuals::Pump();
 
     C3Vector position = (this->m_camera->m_model || !target) ? camPos : target->GetPosition();
     CWorld::Update(&camPos, &camTarget, &position);
