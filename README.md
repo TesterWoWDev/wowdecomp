@@ -2,6 +2,10 @@
 
 A C++ decompilation of the World of Warcraft 3.3.5a client (`Wow.exe`, build 12340, June 2010).
 
+Join the discord for other clients and to show off some cool stuff you build.
+
+https://discord.gg/DsZMGUD8aT
+
 Every function is reconstructed from the original binary and keeps the address it came from in an
 `// OFFSET:` tag, so each one can be compared against the original. The source tree follows the layout
 of the original client (`Engine/Source/<Module>`, `WoW/Source/<Module>`, original file names).
@@ -11,18 +15,24 @@ original.
 
 ## Progress
 
+The percentages below measure how much of the original binary has a counterpart in this source tree. They do
+**not** say how much of the game works, and the missing part is not missing gameplay: the client builds into a
+complete executable and the game is 100% playable. Bugs could still be hiding, though; a ported function can behave differently
+from the original.
+
 Measured against the 12340 binary on 2026-10-15. A function counts as ported when its address is
 tagged in the source.
 
-| | Ported | Total | Done |
+| | Ported | Total | Share of the original |
 |---|---:|---:|---:|
-| Functions | 24,515 | 27,157 | **90.3%** |
-| Code bytes | 5,270,186 | 5,656,573 | **93.2%** |
+| Functions | 24,515 | 27,157 | 90.3% |
+| Code bytes | 5,270,186 | 5,656,573 | 93.2% |
 
 The total leaves out 658 functions that IDA identifies as compiler library code and 132 import thunks.
-Most of what remains is compiler-generated code (static initializers, template instances), C runtime
-helpers, and third-party libraries that are linked from their upstream sources instead of being
-decompiled (FreeType, zlib, PCRE, parts of FMOD Ex).
+Most of the untagged remainder is code the build gets elsewhere: compiler-generated code (static
+initializers, template instances) that our compiler emits on its own, C runtime helpers, and third-party
+libraries that are linked from their upstream sources instead of being decompiled (FreeType, zlib, PCRE,
+parts of FMOD Ex).
 
 ## Requirements
 
@@ -88,3 +98,12 @@ logger off in `WowClient` with `-DWOWCLIENT_CRASH_LOG=OFF`.
 | `ThirdParty/` | Libraries linked from their upstream sources |
 | `Tools/WowClient/` | The `WowClient` executable target |
 | `Tools/XvidDecoder/` | x64 movie decoder that replaces the original 32-bit `DivxDecoder.dll` |
+
+## Special thanks
+
+- [binana](https://github.com/thunderbrewhq/binana)
+- [thunderbrew](https://github.com/thunderbrewhq/thunderbrew)
+- [whoa](https://github.com/whoahq/whoa)
+- TOMRUS, for the initial IDB
+- Everyone who has reported bugs so far
+- The WoW modding community
