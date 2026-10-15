@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include "WoW/Source/Duskhaven/Config/LuaCppTableBridge.h"
 
 class DHConfig
 {

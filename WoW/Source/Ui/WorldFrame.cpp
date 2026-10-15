@@ -28,11 +28,9 @@
 #include "Engine/Source/Tempest/C4Vector.h"
 #include "Engine/Source/Tempest/CAaBox.h"
 #include "Engine/Source/Tempest/CImVector.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "WoW/Source/Duskhaven/Housing/HousingManager.h"
 #include "WoW/Source/Duskhaven/Spells/SpellTargeting.h"
-#include "WoW/Source/Duskhaven/Spells/DangerZoneVisuals.h"
-#include "WoW/Source/Duskhaven/Spells/ScriptedMissileVisuals.h"
-#include "WoW/Source/Duskhaven/Spells/WeaponTrailPlayback.h"
 #include "WoW/Source/Duskhaven/CVars/DuskhavenCVars.h"
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "WoW/Common/TextureCache.h"
@@ -1897,7 +1895,7 @@ void CGWorldFrame::OnWorldRender() {
     GxXformSetViewport(minX, maxX, minY, maxY, minZ, maxZ);
     FFX::Finish();
     CVehiclePassenger_C::PostRenderUpdateAll();
-    Duskhaven::WeaponTrailPlayback::OnWorldRender(this);
+    Duskhaven::OnWorldRender(this);
 }
 
 // VERIFY: 79b17fb9 manual
@@ -2169,8 +2167,7 @@ void CGWorldFrame::OnWorldUpdate() {
     CMissile::UpdateStaticLists();
     Spell_C_ExpireDestLocSpellCasts(FrameTime::s_curTimeMs);
     Spell_C_UpdateInTransitList();
-    Duskhaven::DangerZoneVisuals::Pump();
-    Duskhaven::ScriptedMissileVisuals::Pump();
+    Duskhaven::OnWorldUpdate();
 
     C3Vector position = (this->m_camera->m_model || !target) ? camPos : target->GetPosition();
     CWorld::Update(&camPos, &camTarget, &position);

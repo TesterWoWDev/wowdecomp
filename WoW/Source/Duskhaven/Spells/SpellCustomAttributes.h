@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-
-class SpellRec;
+#include "WoW/Source/DB/Rec/SpellRec.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
 
 namespace Duskhaven
 {
@@ -83,13 +83,7 @@ namespace Duskhaven
     inline bool HasAttribute(const SpellRec* spell, SpellAttr1Cu attr);
     inline bool HasAttribute(const SpellRec* spell, SpellAttr2Cu attr);
     inline bool HasAttribute(uint32_t spellId, SpellAttr2Cu attr);
-} // namespace Duskhaven
 
-#include "WoW/Source/DB/Rec/SpellRec.h"
-#include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
-
-namespace Duskhaven
-{
     inline bool HasAttribute(const SpellRec* spell, SpellAttr0Cu attr)
     {
         if (!spell)

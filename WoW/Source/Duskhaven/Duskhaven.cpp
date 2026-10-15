@@ -13,7 +13,9 @@
 #include "WoW/Source/Duskhaven/Lua/EmbeddedScripts.h"
 
 #include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
+#include "WoW/Source/Duskhaven/Spells/DangerZoneVisuals.h"
 #include "WoW/Source/Duskhaven/Spells/ScriptedMissileVisuals.h"
+#include "WoW/Source/Duskhaven/Spells/WeaponTrailPlayback.h"
 #include "WoW/Source/Duskhaven/Display/GxMonitor.h"
 #include "WoW/Source/Duskhaven/IPC/DiscordPresenceIPC.h"
 
@@ -57,5 +59,16 @@ namespace Duskhaven
         Lua::RegisterCharCreateFunctions();
         Lua::RegisterEmbeddedScripts();
         GxMonitor::RegisterLuaFunctions();
+    }
+
+    void OnWorldUpdate()
+    {
+        DangerZoneVisuals::Pump();
+        ScriptedMissileVisuals::Pump();
+    }
+
+    void OnWorldRender(CGWorldFrame* worldFrame)
+    {
+        WeaponTrailPlayback::OnWorldRender(worldFrame);
     }
 }

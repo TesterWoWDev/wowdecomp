@@ -1,4 +1,5 @@
 #include "WoW/Source/Duskhaven/Config/DHConfig.h"
+#include "WoW/Source/Duskhaven/Config/LuaCppTableBridge.h"
 #include "Engine/Source/FrameScript/FrameScript.h"
 #include <windows.h>
 #include <algorithm>

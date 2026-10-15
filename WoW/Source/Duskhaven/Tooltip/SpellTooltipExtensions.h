@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include "WoW/Source/Duskhaven/Tooltip/OwnedTooltipEvaluator.h"
 
 class SpellRec;
 class CGPlayer_C;
