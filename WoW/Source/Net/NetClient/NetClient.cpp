@@ -10,7 +10,7 @@
 #include "Engine/Source/Storm/H/storm.h"
 #include "WoW/Source/Glue/CGlueMgr.h"
 #include "WoW/Source/WowServices/HMAC.h"
-#include "WoW/Source/Duskhaven/Network/DuskhavenNetwork.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 
 // STATIC: 0x00AD2ED0
 static TSList<NETCLIENTNODE> s_clientList;
@@ -278,8 +278,8 @@ int32_t NetClient::ProcessMessage(uint32_t timeReceived, CDataStore* msg, int32_
     msg->Get(msgId);
     this->ValidateMessageId(msgId);
 
-    if (msgId == Duskhaven::Network::SERVER_TO_CLIENT_OPCODE || msgId == 0x7A00) {
-        return Duskhaven::Network::HandleServerToClientPacket(nullptr, msgId, timeReceived, msg);
+    if (Duskhaven::OnPacketReceived(msgId, timeReceived, msg)) {
+        return 1;
     }
 
     if (msgId < NUM_MSG_TYPES && this->m_handlers[msgId]) {

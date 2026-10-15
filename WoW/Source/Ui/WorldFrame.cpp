@@ -29,8 +29,6 @@
 #include "Engine/Source/Tempest/CAaBox.h"
 #include "Engine/Source/Tempest/CImVector.h"
 #include "WoW/Source/Duskhaven/Duskhaven.h"
-#include "WoW/Source/Duskhaven/Housing/HousingManager.h"
-#include "WoW/Source/Duskhaven/Spells/SpellTargeting.h"
 #include "WoW/Source/Duskhaven/CVars/DuskhavenCVars.h"
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "WoW/Common/TextureCache.h"
@@ -388,13 +386,7 @@ void CGWorldFrame::GetCameraPosition(C3Vector* position) {
 // VERIFY: c8cc818e auto
 // OFFSET: 0x004F66C0
 void CGWorldFrame::OnLayerTrackTerrain(const HITTESTRESULT& result) {
-    if (Duskhaven::Spells::s_castAtCursor) {
-        Duskhaven::Spells::s_castAtCursor = false;
-        CTerrainClickEvent evt;
-        evt.m_guid = WOWGUID();
-        evt.m_point = result.m_point;
-        evt.m_button = MOUSE_BUTTON_LEFT;
-        CGGameUI::HandleTerrainClick(evt);
+    if (Duskhaven::OnTerrainTrack(result.m_point)) {
         return;
     }
 
@@ -1300,7 +1292,7 @@ int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* 
                 this->m_hitGuid = WOWGUID();
             }
 
-            Duskhaven::Housing::RecordLastMouseHit(result->m_guid, result->m_point, kind >= 2);
+            Duskhaven::OnWorldHitTest(result->m_guid, result->m_point, kind >= 2);
         }
     }
 

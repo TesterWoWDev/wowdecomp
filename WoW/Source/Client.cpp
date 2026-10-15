@@ -508,6 +508,7 @@ void ZoneDebugDestroy() {
 // VERIFY: a6d33d4d auto
 // OFFSET: 0x00402910
 static void WowClientDestroy() {
+    Duskhaven::Shutdown();
     ValidateNameDestroy();
     DeclinedWordsDestroy();
     SpellVisualsShutdown();
@@ -1308,6 +1309,7 @@ void ClientInitializeGame(uint32_t mapId, C3Vector position) {
     MovementInit();
     EventRegister(EVENT_ID_IDLE, ClientIdle);
     ClientInitializeGameTime();
+    Duskhaven::OnGameInitialize(mapId, position);
 
     CommandManager* manager = StaticSingleton<CommandManager>::Instance();
     manager->m_connection = ClientServices::Connection();
@@ -1599,6 +1601,7 @@ void ClientDestroyGame(int32_t charSelect, int32_t resumeGlue, int32_t worldLogi
     PlayerNameShutdown();
     WorldTextShutdown();
     CGGameUI::ShutdownGame();
+    Duskhaven::OnGameDestroy();
     ClientDestroyGameTime();
     SI2::ShutdownZoneSoundsHandler();
     SI2::StopAllSounds();

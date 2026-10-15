@@ -48,9 +48,7 @@
 #include "WoW/Source/DB/Rec/ChrClassesRec.h"
 #include <cmath>
 #include "WoW/Source/DB/Rec/LockRec.h"
-#include "WoW/Source/Duskhaven/Spells/DangerZoneVisuals.h"
-#include "WoW/Source/Duskhaven/Spells/ScriptedMissileVisuals.h"
-#include "WoW/Source/Duskhaven/Spells/WeaponTrailPlayback.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "WoW/Source/DB/Rec/SpellCastTimesRec.h"
 #include "WoW/Source/DB/Rec/SpellDurationRec.h"
 #include "WoW/Source/DB/Rec/SpellRangeRec.h"
@@ -1187,7 +1185,7 @@ void PendingSpellCast::OnSpellStartPacket(CDataStore* msg) {
 // VERIFY: ccbce7b4 manual
 // OFFSET: 0x0080FEE0
 int32_t Packet_Group_30(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::DangerZoneVisuals::HandleSpellPacketPreservingCursor(msgId, msg);
+    Duskhaven::OnSpellGoOrStart(msgId, msg);
     SmartGUID castItem;
     SmartGUID caster;
     *msg >> castItem;
@@ -5846,9 +5844,7 @@ void Spell_C_Destroy() {
     s_periodicClientTriggers.Clear();
     s_destLocSpellCasts.InternalClear(0);
     s_enableErrorSpeechCVar = nullptr;
-    Duskhaven::DangerZoneVisuals::ClearAll();
-    Duskhaven::ScriptedMissileVisuals::ClearAll();
-    Duskhaven::WeaponTrailPlayback::ReleaseResources();
+    Duskhaven::OnSpellDestroy();
 }
 
 // VERIFY: f60bc498 manual
@@ -9190,7 +9186,7 @@ void Spell_C_ClearPetCooldowns() {
 // VERIFY: b323a3a8 manual
 // OFFSET: 0x00801C90
 int32_t Packet_MSG_CHANNEL_START(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::DangerZoneVisuals::HandleChannelStart(msg);
+    Duskhaven::OnChannelStart(msg);
     SmartGUID smartGuid;
     *msg >> smartGuid;
     WOWGUID guid = smartGuid;
@@ -9221,7 +9217,7 @@ int32_t Packet_MSG_CHANNEL_START(void* param, NETMESSAGE msgId, uint32_t time, C
 // VERIFY: e57ade70 manual
 // OFFSET: 0x00801DB0
 int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::DangerZoneVisuals::HandleChannelUpdate(msg);
+    Duskhaven::OnChannelUpdate(msg);
     SmartGUID smartGuid;
     *msg >> smartGuid;
     WOWGUID guid = smartGuid;

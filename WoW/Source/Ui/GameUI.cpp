@@ -1,4 +1,5 @@
 #include "GameUI.h"
+#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "WoW/Source/DB/Rec/FileDataRec.h"
 #include "WoW/Source/DB/Rec/MovieFileDataRec.h"
 #include "WoW/Source/DB/Rec/MovieRec.h"
@@ -3717,6 +3718,7 @@ void CGGameUI::EnterWorld() {
     }
 
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_ENTERING_WORLD, nullptr);
+    Duskhaven::OnEnterWorld();
     CGMinimapFrame::EnterWorld();
     CGChat::EnterWorld();
     CGActionBar::EnterWorld();
@@ -8213,6 +8215,7 @@ void CGGameUI::LeaveWorld() {
     }
 
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_LEAVING_WORLD, nullptr);
+    Duskhaven::OnLeaveWorld();
 }
 
 // VERIFY: f11d2535 manual
