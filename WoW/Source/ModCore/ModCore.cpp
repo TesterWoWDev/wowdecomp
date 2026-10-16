@@ -3,7 +3,6 @@
 #include "AutoExport.h"
 #include "FileWatcher.h"
 #include "CustomPacket.h"
-#include "CustomLua.h"
 
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "Engine/Source/lua-5.1/src/lauxlib.h"
@@ -171,9 +170,6 @@ namespace ModCore
 
         // Register custom packet primitives and embedded scripts
         CustomPacketManager::Get().RegisterLuaBindings(m_L);
-
-        // Register custom Lua engine API bindings (GetChargeInfoForSpell, stats, spells, etc.)
-        CustomLuaManager::Get().RegisterLuaBindings(m_L);
 
         // Set BasePath in global table
         std::string setBasePathLua = "ModCore = ModCore or {}; ModCore.BasePath = [[" + m_modsPath.generic_string() + "/]];";
@@ -448,12 +444,6 @@ namespace ModCore
 
     void ModManager::OnWorldHitTest(uint64_t guid, const void* point, bool hitObject)
     {
-        if (point)
-        {
-            const float* pt = static_cast<const float*>(point);
-            CustomLuaManager::Get().RecordMouseHit(guid, pt[0], pt[1], pt[2]);
-        }
-
         if (!m_L) return;
         int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
