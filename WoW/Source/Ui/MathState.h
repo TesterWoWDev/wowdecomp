@@ -169,64 +169,6 @@ enum MATHOP {
     MATHOP_BONUS_COEFFICIENT_1_UPPER = 159,
     MATHOP_BONUS_COEFFICIENT_2_UPPER = 160,
     MATHOP_BONUS_COEFFICIENT_3_UPPER = 161,
-
-    // Duskhaven extended math variables
-    MATHOP_EXT_HP = 162,
-    MATHOP_EXT_HP_UPPER = 163,
-    MATHOP_EXT_PPL_1 = 164,
-    MATHOP_EXT_PPL_32 = 195,
-    MATHOP_EXT_PPL_1_UPPER = 196,
-    MATHOP_EXT_PPL_32_UPPER = 227,
-    MATHOP_EXT_POWER_1 = 228,
-    MATHOP_EXT_POWER_7 = 234,
-    MATHOP_EXT_POWER_1_UPPER = 235,
-    MATHOP_EXT_POWER_7_UPPER = 241,
-    MATHOP_EXT_MASTERY_1 = 242,
-    MATHOP_EXT_MASTERY_2 = 243,
-    MATHOP_EXT_MASTERY_3 = 244,
-    MATHOP_EXT_MASTERY_4 = 245,
-    MATHOP_EXT_MASTERY = 246,
-    MATHOP_EXT_DPCT = 247,
-    MATHOP_EXT_PPCT = 248,
-    MATHOP_EXT_BON_1 = 249,
-    MATHOP_EXT_BON_32 = 280,
-    // Dynamic effect variables (indices 1..32)
-    MATHOP_EXT_M_1 = 281,
-    MATHOP_EXT_M_32 = 312,
-    MATHOP_EXT_M_1_UPPER = 313,
-    MATHOP_EXT_M_32_UPPER = 344,
-    MATHOP_EXT_A_1 = 345,
-    MATHOP_EXT_A_32 = 376,
-    MATHOP_EXT_A_1_UPPER = 377,
-    MATHOP_EXT_A_32_UPPER = 408,
-    MATHOP_EXT_X_1 = 409,
-    MATHOP_EXT_X_32 = 440,
-    MATHOP_EXT_X_1_UPPER = 441,
-    MATHOP_EXT_X_32_UPPER = 472,
-    MATHOP_EXT_T_1 = 473,
-    MATHOP_EXT_T_32 = 504,
-    MATHOP_EXT_T_1_UPPER = 505,
-    MATHOP_EXT_T_32_UPPER = 536,
-    MATHOP_EXT_B_1 = 537,
-    MATHOP_EXT_B_32 = 568,
-    MATHOP_EXT_B_1_UPPER = 569,
-    MATHOP_EXT_B_32_UPPER = 600,
-    MATHOP_EXT_E_1 = 601,
-    MATHOP_EXT_E_32 = 632,
-    MATHOP_EXT_E_1_UPPER = 633,
-    MATHOP_EXT_E_32_UPPER = 664,
-    MATHOP_EXT_F_1 = 665,
-    MATHOP_EXT_F_32 = 696,
-    MATHOP_EXT_F_1_UPPER = 697,
-    MATHOP_EXT_F_32_UPPER = 728,
-    MATHOP_EXT_Q_1 = 729,
-    MATHOP_EXT_Q_32 = 760,
-    MATHOP_EXT_Q_1_UPPER = 761,
-    MATHOP_EXT_Q_32_UPPER = 792,
-    MATHOP_EXT_BC_1 = 793,
-    MATHOP_EXT_BC_32 = 824,
-    MATHOP_EXT_BC_1_UPPER = 825,
-    MATHOP_EXT_BC_32_UPPER = 856,
 };
 
 struct MathStack {
@@ -238,7 +180,7 @@ class MathState {
     public:
     /* 0000 */ uint32_t m_status;
     /* 0004 */ uint32_t m_numOps;
-    /* 0008 */ uint16_t m_ops[128];
+    /* 0008 */ uint8_t m_ops[128];
     /* 0088 */ uint32_t m_numConstants;
     /* 008C */ float m_constants[64];
     /* 018C */ uint32_t m_numIntArgs;
@@ -257,7 +199,7 @@ class MathState {
     int32_t CompileSum(int32_t pos);
     void ExecuteFunction(uint32_t op, MathStack* stack);
     void ExecuteOperator(uint32_t op, MathStack* stack);
-    void GetVariableValue(uint32_t op, MathStack* stack, const SpellRec* spell, int32_t spellLevel, int32_t scale, int32_t parseUnit, int32_t parsePet, int32_t noModifiers, bool isProjected = false);
+    void GetVariableValue(uint32_t op, MathStack* stack, const SpellRec* spell, int32_t spellLevel, int32_t scale, int32_t parseUnit, int32_t parsePet, int32_t noModifiers);
     float Evaluate(const SpellRec* spell, int32_t spellLevel, int32_t scale, int32_t parseUnit, int32_t parsePet, int32_t noModifiers);
 };
 

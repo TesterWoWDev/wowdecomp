@@ -1,5 +1,4 @@
 #include "Object_C.h"
-#include "WoW/Source/Duskhaven/Highlight/NPCHighlight/NPCHighlight.h"
 #include "Engine/Source/Gx/Gx.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
 #include "WoW/Source/Game/GameClient/ProjectTex.h"
@@ -49,7 +48,6 @@
 #include "WoW/Source/DB/Rec/SpellVisualEffectNameRec.h"
 #include "WoW/Source/DB/Rec/SpellVisualKitModelAttachRec.h"
 #include "WoW/Source/DB/Rec/SpellRec.h"
-#include "WoW/Source/Duskhaven/Spells/SpellVisualKitBridge.h"
 
 // STATIC: 0x00ADAC98
 CGObject_C::InteractIcon CGObject_C::s_interactIcons[12] = {
@@ -979,10 +977,6 @@ int32_t CGObject_C::GetQuestGiverCursor(int32_t highlighted) {
 void CGObject_C::HideHighlightType(int32_t type) {
     this->m_modelFlags &= ~(1 << (type + 24));
 
-    if (type == 1) {
-        Duskhaven::Highlight::NPCHighlight::UntrackHoveredObject(this);
-    }
-
     if (s_highlightedObjectGuid == this->m_obj->m_guid) {
         s_highlightedObjectGuid = WOWGUID();
     }
@@ -1222,10 +1216,6 @@ void CGObject_C::SetTypeID(OBJECT_TYPE_ID typeId) {
 // OFFSET: 0x00743C70
 void CGObject_C::ShowHighlightType(int32_t type) {
     this->m_modelFlags |= 1 << (type + 24);
-
-    if (type == 1) {
-        Duskhaven::Highlight::NPCHighlight::TrackHoveredObject(this);
-    }
 
     if (this->IsHighlightSuppressed()) {
         return;
@@ -1844,8 +1834,6 @@ attachments:
     }
 
     this->PlaySpellVisualKit_PlayAnims(data.m_spellRec, data.m_impactVisualKit, static_cast<SPELL_VISUAL_KIT_TYPE>(data.m_kitType), position, animParam, data.m_harmful, data.m_someGUID, data.m_effectFadeTime, visual, flags, hasEffect);
-
-    Duskhaven::SpellVisualKitBridge::PlayExtraEffects(this, data.m_impactVisualKit->m_id);
 }
 
 // VERIFY: 1d3e05cf auto

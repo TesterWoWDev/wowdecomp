@@ -1,5 +1,4 @@
 #include "WoW/Source/DB/WowClientDB.h"
-#include "WoW/Source/Duskhaven/Streaming/NativeDbcPatch.h"
 
 // INLINED
 WowClientDB_Base::WowClientDB_Base() {
@@ -18,11 +17,6 @@ WowClientDB_Base::~WowClientDB_Base() {
 // VERIFY: 60c92aa6 auto
 // OFFSET: 0x004CFBB0
 uint8_t* DecompressRow(const uint8_t* src, uint32_t size, uint8_t* dst) {
-    if (DBCPatch::IsPatchedRow(src)) {
-        std::memcpy(dst, src, size);
-        return dst + size;
-    }
-
     uint8_t* end = &dst[size];
     *dst = *src;
     uint8_t* out = dst + 1;

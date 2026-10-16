@@ -1,11 +1,8 @@
 #include "Unit_C.h"
-#include "WoW/Source/Duskhaven/Highlight/FindYourself/FindYourself.h"
-#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 #include <cmath>
 #include <new>
 #include <typeinfo>
 #include <cstring>
-#include <vector>
 #include "Engine/Source/Base/CDataStore.h"
 #include "Engine/Source/ConsoleBase/ConsoleVar.h"
 #include "Engine/Source/FrameScript/FrameScript.h"
@@ -41,7 +38,6 @@
 #include "WoW/Source/DB/Rec/SpellVisualRec.h"
 #include "WoW/Source/DB/Rec/UnitBloodLevelsRec.h"
 #include "WoW/Source/DB/Rec/VehicleSeatRec.h"
-#include "WoW/Source/Duskhaven/DBC/Defs/SpellEffect.h"
 #include "WoW/Source/Game/GameClient/CDrawBowString.h"
 #include "WoW/Source/Game/GameClient/PlayerName.h"
 #include "WoW/Source/Magic/MagicClient/Spell_C.h"
@@ -1609,7 +1605,6 @@ void CGUnit_C::PreAnimate(CGWorldFrame* frame) {
     }
 
     this->UpdateDelayedSpellVisualKits();
-    this->StabilizeChannelLowerBodyAnimation();
 }
 
 // VERIFY: 8308766d manual
@@ -2273,24 +2268,20 @@ void CGUnit_C::PlayFallLandAnimation(uint32_t oldFlags, int32_t jumping) {
             if (!(flags & 0xF)) {
                 this->PlayUnitSound(12, 1);
                 this->PlayBaseAnimation(ANIM_JUMP_END, 0);
-                this->HandleFallLandChannelAnimation();
                 return;
             }
 
             if (!(flags & 0x2) && !(flags & 0x100) && !this->IsRunning()) {
                 this->PlayUnitSound(12, 1);
                 this->PlayBaseAnimation(ANIM_JUMP_LAND_RUN, 0);
-                this->HandleFallLandChannelAnimation();
                 return;
             }
         }
     } else if (!((this->m_movement->m_flags ^ oldFlags) & 0x40F)) {
-        this->HandleFallLandChannelAnimation();
         return;
     }
 
     this->UpdateBaseAnimation(false, -1);
-    this->HandleFallLandChannelAnimation();
 }
 
 // VERIFY: 8a0e5647 manual
@@ -2755,10 +2746,6 @@ void CGUnit_C::UpdateBaseAnimation(uint32_t animFlags, int32_t mask) {
         return;
     }
 
-    bool wasChanneling = this->m_unit && ((this->m_channelSpellId != 0) || (this->m_unit->m_unitChannelSpell != 0));
-    uint32_t rootAnimBefore = (wasChanneling && this->m_worldModel) ? this->m_worldModel->GetBoneSequenceId(0xFFFFFFFF) : 0xFFFFFFFF;
-    uint32_t rootChannelBeforeUpdate = CGUnit_C::IsChannelCastAnim(rootAnimBefore) ? rootAnimBefore : 0;
-
     uint32_t anim = this->ChooseAnimation(mask, &animFlags, nullptr);
 
     if (anim == ANIM_COUNT) {
@@ -2779,36 +2766,6 @@ void CGUnit_C::UpdateBaseAnimation(uint32_t animFlags, int32_t mask) {
         }
 
         this->m_animStandState = this->GetClientStandState();
-    }
-
-    bool isChanneling = this->m_unit && ((this->m_channelSpellId != 0) || (this->m_unit->m_unitChannelSpell != 0));
-    if (isChanneling && this->m_worldModel) {
-        bool isMovingLower = (this->m_movementData.m_flags & (0x0000000F | 0x00003000 | 0x00200000)) != 0;
-        uint32_t upperAnim = (this->m_torsoKeyBone != -1) ? this->m_worldModel->GetBoneSequenceId(this->m_torsoKeyBone) : 0xFFFFFFFF;
-        uint32_t rootAnim = this->m_worldModel->GetBoneSequenceId(0xFFFFFFFF);
-
-        if (!isMovingLower) {
-            if (this->m_torsoKeyBone != -1 && CGUnit_C::IsChannelCastAnim(upperAnim)) {
-                if (!CGUnit_C::IsChannelCastAnim(rootAnim)) {
-                    this->SetKeyBoneSequence(this->m_worldModel, 0xFFFFFFFF, upperAnim, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-                }
-                this->UnsetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, 1, 0, 1);
-            }
-        } else {
-            if (!CGUnit_C::IsChannelCastAnim(upperAnim) && CGUnit_C::IsChannelCastAnim(rootAnim) && this->m_torsoKeyBone != -1) {
-                this->SetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, rootAnim, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-            }
-            if (rootChannelBeforeUpdate != 0 && this->m_torsoKeyBone != -1) {
-                uint32_t curUpper = this->m_worldModel->GetBoneSequenceId(this->m_torsoKeyBone);
-                if (!CGUnit_C::IsChannelCastAnim(curUpper)) {
-                    this->SetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, rootChannelBeforeUpdate, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-                }
-            }
-            int32_t rootMovementAnimation = this->ResolveChannelLowerBodyAnimation(animFlags, mask, true);
-            if (rootMovementAnimation != -1) {
-                this->SetKeyBoneSequence(this->m_worldModel, 0xFFFFFFFF, rootMovementAnimation, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-            }
-        }
     }
 }
 
@@ -3282,11 +3239,6 @@ int32_t CGUnit_C::CanHighlight() const {
 // VERIFY: 9904e3a0 auto
 // OFFSET: 0x00718AC0
 int32_t CGUnit_C::GetSelectionHighlightColor(CImVector* color) const {
-    if (Duskhaven::Highlight::FindYourself::ShouldRender() && color && (this->m_obj->m_guid == ClntObjMgrGetActivePlayer())) {
-        *color = Duskhaven::Highlight::FindYourself::SelfHighlightColor();
-        return 1;
-    }
-
     if (this->m_clientFlags & 0x10) {
         *color = *reinterpret_cast<const CImVector*>(s_attackTargetColor);
     } else {
@@ -4003,13 +3955,6 @@ int32_t AnimationData::FindIdByBehaviorAndTier(uint32_t behavior, int32_t tier, 
 // VERIFY: fea936b3 manual
 // OFFSET: 0x007176F0
 uint32_t CGUnit_C::ResolveAnimForModel(uint32_t animId, CM2Model* model) {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        int32_t monkAnim = CGUnit_C::GetMonkUnarmedAttackAnimation(animId);
-        if (monkAnim != -1) {
-            animId = static_cast<uint32_t>(monkAnim);
-        }
-    }
-
     int32_t tier = this->m_animTier;
 
     if (!(this->m_modelFlags & 0x40000) || (this->m_modelFlags & 0x20000) || !this->GetObjectModel() || !this->GetObjectModel()->IsLoaded(0, 0)) {
@@ -4022,28 +3967,6 @@ uint32_t CGUnit_C::ResolveAnimForModel(uint32_t animId, CM2Model* model) {
         }
     } else {
         model = this->GetObjectModel();
-    }
-
-    if (animId >= ANIM_COUNT) {
-        if (model->IsSequenceLoaded(animId)) {
-            return animId;
-        }
-
-        uint32_t currentAnim = animId;
-        for (int32_t depth = 0; depth < 16; ++depth) {
-            AnimationDataRec* rec = g_animationDataDB.GetRecord(currentAnim);
-            if (!rec || rec->m_fallback == static_cast<int32_t>(currentAnim)) {
-                break;
-            }
-            currentAnim = static_cast<uint32_t>(rec->m_fallback);
-            if (currentAnim >= ANIM_COUNT && model->IsSequenceLoaded(currentAnim)) {
-                return currentAnim;
-            }
-            if (currentAnim < ANIM_COUNT) {
-                animId = currentAnim;
-                break;
-            }
-        }
     }
 
     uint32_t result = static_cast<uint16_t>(animId);
@@ -4183,9 +4106,6 @@ int32_t CGUnit_C::ApplyAttachmentAnimOverride(const M2BoneSequenceInfo* mount, c
 // VERIFY: 9be483c3 manual
 // OFFSET: 0x00737EF0
 void CGUnit_C::ProcessAnimationEvent(M2BoneSequenceInfo* slot, uint32_t currentAnim, int32_t torso, uint32_t previousAnim, int32_t blend, int32_t keepVariation) {
-    if (slot && !torso && this->ShouldRouteMovingChannelToUpperSlot(slot->m_sequenceId)) {
-        torso = 1;
-    }
     uint32_t anim = slot->m_sequenceId;
     uint32_t playing = anim;
     bool casting = this->m_unit->m_unitChannelSpell || (this->m_animationState & 0x400);
@@ -4273,10 +4193,6 @@ void CGUnit_C::ProcessAnimationEvent(M2BoneSequenceInfo* slot, uint32_t currentA
 // VERIFY: 745c0966 manual
 // OFFSET: 0x00723E30
 int32_t CGUnit_C::ShouldSplitTorsoAnimation(uint32_t animId, uint32_t currentAnim) {
-    if (this->ShouldRouteMovingChannelToUpperSlot(animId)) {
-        return 1;
-    }
-
     if (currentAnim == 0xFFFFFFFF) {
         return 0;
     }
@@ -4421,12 +4337,6 @@ void CGUnit_C::UpdateHandItemAnimEffects(bool force) {
     } else {
         this->SetSheatheState(this->m_unit->m_unitFieldBytes2[0], 1, 0);
     }
-
-    if (this->ShouldPreventMeleeUnsheath()) {
-        this->m_previousSheatheState = 0;
-        this->m_sheatheState = 0;
-        this->m_animationState &= ~(0x100000 | 0x200000);
-    }
 }
 
 // VERIFY: 4d39ab41 manual
@@ -4473,12 +4383,7 @@ void CGUnit_C::PlayBaseAnimation(uint32_t animId, int32_t flags) {
     if (flags & 0x2) {
         anim = animId;
     } else {
-        if (this->ShouldPreventMeleeUnsheath()) {
-            int32_t monkAnim = CGUnit_C::GetMonkUnarmedAttackAnimation(animId);
-            if (monkAnim != -1) {
-                animId = static_cast<uint32_t>(monkAnim);
-            }
-        } else if (!(flags & 0x8) && (animId == ANIM_SPECIAL_1H || animId == ANIM_SPECIAL_2H)) {
+        if (!(flags & 0x8) && (animId == ANIM_SPECIAL_1H || animId == ANIM_SPECIAL_2H)) {
             const CGUnitVirtualItem* mainHand = this->GetVirtualItem(0, false);
             const CGUnitVirtualItem* offHand = this->GetVirtualItem(1, false);
 
@@ -5070,22 +4975,10 @@ void CGUnit_C::OnRightClick() {
                 int32_t maxPoints;
                 g_spellDB.GetRecord(CGSpellBook::GetSkinningSpell(this), &spell);
 
-                bool foundSkinning = false;
                 for (uint32_t i = 0; i < 3; i++) {
                     if (spell.m_effect[i] == 95) {
                         Spell_C_GetMinMaxPoints(&spell, i, &minPoints, &maxPoints, 0, 0, 0, 0);
-                        foundSkinning = true;
                         break;
-                    }
-                }
-
-                if (!foundSkinning && LocalSpellData::HasExtendedEffects(spell.m_id)) {
-                    for (uint32_t i = 3; i < 32; i++) {
-                        const SpellEffectCacheRow* effect = nullptr;
-                        if (LocalSpellData::TryGetSpellEffect(spell.m_id, i, effect) && effect && effect->effect == 95) {
-                            Spell_C_GetMinMaxPoints(&spell, i, &minPoints, &maxPoints, 0, 0, 0, 0);
-                            break;
-                        }
                     }
                 }
 
@@ -5856,10 +5749,6 @@ int32_t __stdcall CGUnit_C::IsTwoHanded(const CGUnitVirtualItem* item) {
 // VERIFY: 46787e5a auto
 // OFFSET: 0x00714DD0
 uint32_t CGUnit_C::GetCombatReadyAnim() const {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        return ANIM_READY_UNARMED;
-    }
-
     const CGUnitVirtualItem* item = this->GetVirtualItem(0, false);
 
     if (!item || item->m_classID != 2) {
@@ -6307,308 +6196,11 @@ void CGUnit_C::GetCursorFile(int32_t unable, char* buffer, uint32_t size) const 
 // VERIFY: c4fa9258 auto
 // OFFSET: 0x00715F70
 bool CGUnit_C::MountedCombatAllowed() const {
-    uint32_t auraCount = this->GetAuraCount();
-    for (uint32_t i = 0; i < auraCount; ++i) {
-        AuraData* aura = const_cast<CGUnit_C*>(this)->GetAura(i);
-        if (!aura) continue;
-        SpellRec spellRec;
-        if (g_spellDB.GetRecord(aura->m_spellId, &spellRec)) {
-            for (int32_t e = 0; e < 3; ++e) {
-                if (spellRec.m_effectAura[e] == 312) { // SPELL_AURA_COMBAT_MOUNT_ILLUSION
-                    return true;
-                }
-            }
-        }
-    }
-
     if (this->m_creatureCacheEntry) {
         return (this->m_creatureCacheEntry->m_typeFlags >> 11) & 1;
     }
 
     return false;
-}
-
-bool CGUnit_C::ShouldPreventMeleeUnsheath() const {
-    if (!this->m_unit) {
-        return false;
-    }
-
-    uint8_t unitClass = this->m_unit->m_unitFieldBytes0[1];
-    if (unitClass != 12) {
-        return false;
-    }
-
-    uint32_t auraCount = this->GetAuraCount();
-    for (uint32_t i = 0; i < auraCount; ++i) {
-        AuraData* aura = const_cast<CGUnit_C*>(this)->GetAura(i);
-        if (!aura) continue;
-        SpellRec spellRec;
-        if (g_spellDB.GetRecord(aura->m_spellId, &spellRec)) {
-            for (int32_t e = 0; e < 3; ++e) {
-                if (spellRec.m_effectAura[e] == 355) { // SPELL_AURA_MONK_UNARMED
-                    return true;
-                }
-            }
-        }
-        for (uint32_t eff = 3; eff < 32; ++eff) {
-            SpellEffectCacheRow* customEffect = SpellEffectCacheDB::Get(SpellEffectCacheKey(aura->m_spellId, eff));
-            if (!customEffect) {
-                break;
-            }
-            if (customEffect->effectApplyAuraName == 355) {
-                return true;
-            }
-        }
-    }
-
-    static bool s_monkUnarmedSpellsCached = false;
-    static std::vector<uint32_t> s_monkUnarmedSpellIds;
-    if (!s_monkUnarmedSpellsCached) {
-        s_monkUnarmedSpellsCached = true;
-        for (uint32_t id = 0; id <= static_cast<uint32_t>(g_spellDB.m_maxID); ++id) {
-            SpellRec rec;
-            if (g_spellDB.GetRecord(id, &rec)) {
-                bool hasMonkAura = false;
-                for (int32_t e = 0; e < 3; ++e) {
-                    if (rec.m_effectAura[e] == 355) {
-                        hasMonkAura = true;
-                        break;
-                    }
-                }
-                if (!hasMonkAura) {
-                    for (uint32_t eff = 3; eff < 32; ++eff) {
-                        SpellEffectCacheRow* customEffect = SpellEffectCacheDB::Get(SpellEffectCacheKey(id, eff));
-                        if (!customEffect) {
-                            break;
-                        }
-                        if (customEffect->effectApplyAuraName == 355) {
-                            hasMonkAura = true;
-                            break;
-                        }
-                    }
-                }
-                if (hasMonkAura) {
-                    s_monkUnarmedSpellIds.push_back(id);
-                }
-            }
-        }
-    }
-
-    for (uint32_t spellId : s_monkUnarmedSpellIds) {
-        if (const_cast<CGUnit_C*>(this)->IsSpellKnown(spellId)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool CGUnit_C::IsChannelCastAnim(uint32_t animationId) {
-    if (animationId == ANIM_CHANNEL_CAST_DIRECTED || animationId == ANIM_CHANNEL_CAST_OMNI) {
-        return true;
-    }
-    if (animationId == 0xFFFFFFFF) {
-        return false;
-    }
-    AnimationDataRec* row = g_animationDataDB.GetRecord(animationId);
-    return row && (row->m_behaviorID == ANIM_CHANNEL_CAST_DIRECTED || row->m_behaviorID == ANIM_CHANNEL_CAST_OMNI);
-}
-
-bool CGUnit_C::IsAirborneAnim(uint32_t animationId) {
-    if (animationId == ANIM_JUMP_START || animationId == ANIM_FALL) {
-        return true;
-    }
-    if (animationId == 0xFFFFFFFF) {
-        return false;
-    }
-    AnimationDataRec* row = g_animationDataDB.GetRecord(animationId);
-    return row && row->m_behaviorID >= 37 && (row->m_behaviorID <= 40 || row->m_behaviorID == 467);
-}
-
-static bool IsMonkUnarmedOffhandAttackBehavior(uint32_t behaviorId) {
-    switch (behaviorId) {
-        case ANIM_ATTACK_OFF:
-        case ANIM_ATTACK_OFF_PIERCE:
-        case ANIM_ATTACK_UNARMED_OFF:
-            return true;
-        default:
-            return false;
-    }
-}
-
-static bool IsMonkUnarmedMainhandAttackBehavior(uint32_t behaviorId) {
-    switch (behaviorId) {
-        case ANIM_ATTACK_1H:
-        case ANIM_ATTACK_2H:
-        case ANIM_ATTACK_2HL:
-        case ANIM_SPECIAL_1H:
-        case ANIM_SPECIAL_2H:
-        case ANIM_ATTACK_1H_PIERCE:
-        case ANIM_ATTACK_2H_LOOSE_PIERCE:
-        case ANIM_SPECIAL_UNARMED:
-            return true;
-        default:
-            return false;
-    }
-}
-
-int32_t CGUnit_C::GetMonkUnarmedAttackAnimation(uint32_t animationId) {
-    if (animationId == 0xFFFFFFFF) {
-        return -1;
-    }
-    if (IsMonkUnarmedOffhandAttackBehavior(animationId)) {
-        return ANIM_ATTACK_UNARMED_OFF;
-    }
-    if (IsMonkUnarmedMainhandAttackBehavior(animationId)) {
-        return ANIM_ATTACK_UNARMED;
-    }
-    AnimationDataRec* row = g_animationDataDB.GetRecord(animationId);
-    if (!row) {
-        return -1;
-    }
-    if (IsMonkUnarmedOffhandAttackBehavior(row->m_behaviorID)) {
-        return ANIM_ATTACK_UNARMED_OFF;
-    }
-    if (IsMonkUnarmedMainhandAttackBehavior(row->m_behaviorID)) {
-        return ANIM_ATTACK_UNARMED;
-    }
-    return -1;
-}
-
-bool CGUnit_C::ShouldRouteMovingChannelToUpperSlot(uint32_t animationId) const {
-    if (!this->m_unit) {
-        return false;
-    }
-
-    uint32_t movementFlags = this->m_movementData.m_flags;
-    bool isMovingLower = (movementFlags & (0x0000000F | 0x00003000 | 0x00200000)) != 0;
-    if (!isMovingLower) {
-        return false;
-    }
-
-    bool isChanneling = (this->m_channelSpellId != 0) || (this->m_unit->m_unitChannelSpell != 0);
-    if (!isChanneling) {
-        return false;
-    }
-
-    if (!CGUnit_C::IsChannelCastAnim(animationId)) {
-        return false;
-    }
-
-    return this->m_torsoKeyBone != -1;
-}
-
-int32_t CGUnit_C::ResolveChannelLowerBodyAnimation(uint32_t animationFlags, int32_t resolveFlags, bool allowAirborne) {
-    if (!this->m_unit || !this->m_worldModel) {
-        return -1;
-    }
-
-    uint32_t movementFlags = this->m_movementData.m_flags;
-    if (movementFlags & 0x00200000) { // MOVE_FLAG_SWIMMING
-        if (movementFlags & 0x00000002) { // MOVE_FLAG_BACKWARD
-            return ANIM_SWIM_BACKWARDS;
-        }
-        return (movementFlags & 0x0000000F) ? ANIM_SWIM : ANIM_SWIM_IDLE;
-    }
-
-    if (allowAirborne && (movementFlags & 0x00003000)) { // MOVE_FLAG_FALLING
-        uint32_t rootAnimation = this->m_worldModel->GetBoneSequenceId(0xFFFFFFFF);
-        bool jumpingUp = (movementFlags & 0x00003000) && (this->m_movementData.m_fallVelocity > 0.0f);
-        if (rootAnimation == ANIM_JUMP_START) {
-            if (jumpingUp) {
-                return rootAnimation;
-            }
-        } else if (CGUnit_C::IsAirborneAnim(rootAnimation)) {
-            return rootAnimation;
-        }
-
-        if (jumpingUp) {
-            return ANIM_JUMP_START;
-        }
-
-        uint32_t resolvedFlags = animationFlags;
-        uint32_t resolvedAnimation = this->ChooseAnimation(resolveFlags | 4, &resolvedFlags, nullptr);
-        if (resolvedAnimation != ANIM_COUNT && !CGUnit_C::IsChannelCastAnim(resolvedAnimation)) {
-            return resolvedAnimation;
-        }
-
-        return ANIM_FALL;
-    }
-
-    if (movementFlags & 0x0000000F) { // MOVE_FLAG_DIRECTIONAL
-        if (movementFlags & 0x00000002) { // MOVE_FLAG_BACKWARD
-            return ANIM_WALKBACKWARDS;
-        }
-
-        float speed = this->m_movementData.GetBaseSpeed(0);
-        if (speed >= 11.0f) {
-            return ANIM_SPRINT;
-        }
-
-        float walkSpeed = this->m_movementData.m_walkSpeed;
-        return (speed > walkSpeed * 2.0f) ? ANIM_RUN : ANIM_WALK;
-    }
-
-    return -1;
-}
-
-void CGUnit_C::StabilizeChannelLowerBodyAnimation() {
-    if (!this->m_unit || !this->m_worldModel) {
-        return;
-    }
-
-    bool isMovingLower = (this->m_movementData.m_flags & (0x0000000F | 0x00003000 | 0x00200000)) != 0;
-    bool isChanneling = (this->m_channelSpellId != 0) || (this->m_unit->m_unitChannelSpell != 0);
-
-    if (!isChanneling || !isMovingLower) {
-        return;
-    }
-
-    uint32_t rootAnim = this->m_worldModel->GetBoneSequenceId(0xFFFFFFFF);
-    uint32_t movementFlags = this->m_movementData.m_flags;
-
-    if (movementFlags & 0x00003000) { // MOVE_FLAG_FALLING
-        if (!CGUnit_C::IsAirborneAnim(rootAnim)) {
-            uint32_t upperAnim = (this->m_torsoKeyBone != -1) ? this->m_worldModel->GetBoneSequenceId(this->m_torsoKeyBone) : 0xFFFFFFFF;
-            if (!CGUnit_C::IsChannelCastAnim(upperAnim) && CGUnit_C::IsChannelCastAnim(rootAnim) && this->m_torsoKeyBone != -1) {
-                this->SetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, rootAnim, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-            }
-            this->SetKeyBoneSequence(this->m_worldModel, 0xFFFFFFFF, ANIM_JUMP_START, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-        }
-        return;
-    }
-
-    if (!CGUnit_C::IsAirborneAnim(rootAnim)) {
-        return;
-    }
-
-    uint32_t upperAnim = (this->m_torsoKeyBone != -1) ? this->m_worldModel->GetBoneSequenceId(this->m_torsoKeyBone) : 0xFFFFFFFF;
-    if (!CGUnit_C::IsChannelCastAnim(upperAnim) && CGUnit_C::IsChannelCastAnim(rootAnim) && this->m_torsoKeyBone != -1) {
-        this->SetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, rootAnim, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-    }
-
-    int32_t rootMovementAnimation = this->ResolveChannelLowerBodyAnimation(0, 4, false);
-    if (rootMovementAnimation != -1) {
-        this->SetKeyBoneSequence(this->m_worldModel, 0xFFFFFFFF, rootMovementAnimation, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-    }
-}
-
-void CGUnit_C::HandleFallLandChannelAnimation() {
-    bool isChanneling = this->m_unit && ((this->m_channelSpellId != 0) || (this->m_unit->m_unitChannelSpell != 0));
-    if (!isChanneling || !this->m_worldModel) {
-        return;
-    }
-
-    uint32_t rootAnim = this->m_worldModel->GetBoneSequenceId(0xFFFFFFFF);
-    uint32_t upperAnim = (this->m_torsoKeyBone != -1) ? this->m_worldModel->GetBoneSequenceId(this->m_torsoKeyBone) : 0xFFFFFFFF;
-    if (!CGUnit_C::IsChannelCastAnim(upperAnim) && CGUnit_C::IsChannelCastAnim(rootAnim) && this->m_torsoKeyBone != -1) {
-        this->SetKeyBoneSequence(this->m_worldModel, this->m_torsoKeyBone, rootAnim, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-    }
-
-    int32_t rootMovementAnimation = this->ResolveChannelLowerBodyAnimation(0, 4, false);
-    if (rootMovementAnimation != -1) {
-        this->SetKeyBoneSequence(this->m_worldModel, 0xFFFFFFFF, rootMovementAnimation, 0xFFFFFFFF, 0, 1.0f, 0, 1, 0);
-    }
 }
 
 // VERIFY: a73b6e27 auto
@@ -9052,15 +8644,6 @@ void CGUnit_C::UpdateAuraEffectMask() {
                 this->m_auraEffectMask[spell.m_effectAura[effect] / 8] |= 1 << (spell.m_effectAura[effect] % 8);
             }
         }
-
-        if (LocalSpellData::HasExtendedEffects(aura->m_spellId)) {
-            LocalSpellData::ForEachSpellEffect(aura->m_spellId, [&](const SpellEffectCacheRow& effect) {
-                if (effect.effectApplyAuraName > 0 && effect.effectApplyAuraName / 8 < sizeof(this->m_auraEffectMask)) {
-                    this->m_auraEffectMask[effect.effectApplyAuraName / 8] |= 1 << (effect.effectApplyAuraName % 8);
-                }
-                return true;
-            });
-        }
     }
 }
 
@@ -9654,30 +9237,6 @@ void CGUnit_C::ReleaseEffectsBySpell(int32_t spellId) {
 void CGUnit_C::SetKeyBoneSequence(CM2Model* model, uint32_t boneId, uint32_t sequenceId, uint32_t variation, uint32_t time, float speed, int32_t blend, int32_t primary, int32_t force) {
     if (!model) {
         return;
-    }
-
-    if (boneId == 0xFFFFFFFF && this->ShouldRouteMovingChannelToUpperSlot(sequenceId)) {
-        int32_t rootMovementAnimation = this->ResolveChannelLowerBodyAnimation(0, 4, true);
-        if (rootMovementAnimation != -1) {
-            this->SetKeyBoneSequence(model, 0xFFFFFFFF, rootMovementAnimation, 0xFFFFFFFF, 0, 1.0f, blend, primary, force);
-        }
-        boneId = static_cast<uint32_t>(this->m_torsoKeyBone);
-    }
-
-    if (this->ShouldPreventMeleeUnsheath()) {
-        if ((boneId == 2 || boneId == 3) && (sequenceId == 89 || sequenceId == 90)) {
-            if (boneId == 3) {
-                this->m_animationState &= ~0x100000;
-            } else if (boneId == 2) {
-                this->m_animationState &= ~0x200000;
-            }
-            return;
-        }
-
-        int32_t monkUnarmedAnim = CGUnit_C::GetMonkUnarmedAttackAnimation(sequenceId);
-        if (monkUnarmedAnim != -1) {
-            sequenceId = static_cast<uint32_t>(monkUnarmedAnim);
-        }
     }
 
     if (!force && this->m_vehiclePassenger && this->m_vehiclePassenger->OverridesModelAnimation()) {
@@ -14112,13 +13671,6 @@ void CGUnit_C::OnAuraUpdate(CDataStore* msg, bool updateAll) {
 // VERIFY: 80b6ec9d manual
 // OFFSET: 0x00736D30
 void CGUnit_C::SetSheatheState(uint32_t showWeapons, int32_t instant, int32_t noSend) {
-    if (showWeapons == 1 && this->ShouldPreventMeleeUnsheath()) {
-        this->m_previousSheatheState = 0;
-        this->m_sheatheState = 0;
-        this->m_animationState &= ~(0x100000 | 0x200000);
-        return;
-    }
-
     if (this->IsPlayingWeaponAnim()) {
         showWeapons = CGUnit_C::ResolveSheathState(showWeapons, this->GetVirtualItem(0, false), this->GetVirtualItem(1, false));
     }
@@ -14511,15 +14063,6 @@ int32_t CGUnit_C::ShowRangedWeapon(bool sheathed, bool* rightHand) {
 // VERIFY: d991186c manual
 // OFFSET: 0x007310A0
 int32_t CGUnit_C::SheatheHandItem(uint32_t hand, int32_t sheathe) {
-    if ((hand == 0 || hand == 1) && sheathe == 0 && this->ShouldPreventMeleeUnsheath()) {
-        if (hand == 0) {
-            this->m_animationState &= ~0x100000;
-        } else if (hand == 1) {
-            this->m_animationState &= ~0x200000;
-        }
-        return 0;
-    }
-
     CM2Model* model = this->m_worldModel;
 
     if (!model) {
@@ -14703,11 +14246,6 @@ void CGUnit_C::SetSheatheStateInstant() {
 // VERIFY: 8485e288 manual
 // OFFSET: 0x007367B0
 int32_t CGUnit_C::UnsheatheRightWeapon() {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        this->m_animationState &= ~0x100000;
-        return 1;
-    }
-
     this->m_animationState |= 0x100000;
 
     if (!this->m_previousSheatheState) {
@@ -14741,11 +14279,6 @@ int32_t CGUnit_C::UnsheatheRightWeapon() {
 // VERIFY: b1c179df manual
 // OFFSET: 0x007368B0
 int32_t CGUnit_C::UnsheatheLeftWeapon() {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        this->m_animationState &= ~0x200000;
-        return 1;
-    }
-
     this->m_animationState |= 0x200000;
 
     if (!this->m_previousSheatheState) {
@@ -14893,13 +14426,6 @@ void CGUnit_C::AnimEndCallback(CM2Model* model, uint32_t boneId, uint32_t sequen
 // VERIFY: a0318ed7 manual
 // OFFSET: 0x0073BBD0
 void CGUnit_C::AnimEndHandler(CM2Model* model, uint32_t boneId, uint32_t sequenceId, int32_t interrupted, uint32_t time) {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        int32_t monkUnarmedAnim = CGUnit_C::GetMonkUnarmedAttackAnimation(sequenceId);
-        if (monkUnarmedAnim != -1) {
-            sequenceId = static_cast<uint32_t>(monkUnarmedAnim);
-        }
-    }
-
     if (this->m_vehiclePassenger && this->m_vehiclePassenger->m_state) {
         this->m_vehiclePassenger->OnAnimEnd(boneId);
     }
@@ -15306,22 +14832,6 @@ void CGUnit_C::OnBaseAnimEnd(CM2Model* model, uint32_t boneId, uint32_t sequence
 // VERIFY: 81228148 manual
 // OFFSET: 0x00737BD0
 void CGUnit_C::OnKeyBoneAnimEnd(CM2Model* model, uint32_t boneId, uint32_t sequenceId) {
-    if (this->ShouldPreventMeleeUnsheath()) {
-        if ((boneId == 2 || boneId == 3) && (sequenceId == 89 || sequenceId == 90)) {
-            if (boneId == 3) {
-                this->m_animationState &= ~0x100000;
-            } else if (boneId == 2) {
-                this->m_animationState &= ~0x200000;
-            }
-            return;
-        }
-
-        int32_t monkUnarmedAnim = CGUnit_C::GetMonkUnarmedAttackAnimation(sequenceId);
-        if (monkUnarmedAnim != -1) {
-            sequenceId = static_cast<uint32_t>(monkUnarmedAnim);
-        }
-    }
-
     if (sequenceId == 15) {
         return;
     }
@@ -15406,17 +14916,6 @@ void CGUnit_C::OnKeyBoneAnimEnd(CM2Model* model, uint32_t boneId, uint32_t seque
 // VERIFY: fab76f79 auto
 // OFFSET: 0x00732500
 void CGUnit_C::ExchangeSheathedWeapon(const C3Vector* position, uint32_t hand, uint32_t flag) {
-    if ((hand == 0 || hand == 1) && this->ShouldPreventMeleeUnsheath()) {
-        if (hand == 0) {
-            this->m_animationState &= ~0x100000;
-        } else if (hand == 1) {
-            this->m_animationState &= ~0x200000;
-        }
-        this->m_previousSheatheState = 0;
-        this->m_sheatheState = 0;
-        return;
-    }
-
     const CGUnitVirtualItem* item = this->GetVirtualItem(hand, false);
     const CGUnitVirtualItem* ranged = this->GetVirtualItem(2, false);
     uint32_t state;
@@ -15990,20 +15489,6 @@ bool CGUnit_C::AffectedByAura(int32_t auraType, const SpellRec* spell) const {
                 return true;
             }
         }
-
-        if (spell && LocalSpellData::HasExtendedEffects(aura->m_spellId)) {
-            bool matched = false;
-            LocalSpellData::ForEachSpellEffect(aura->m_spellId, [&](const SpellEffectCacheRow& effect) {
-                if (effect.effectApplyAuraName == static_cast<uint32_t>(auraType) && LocalSpellData::SpellClassMaskMatchesEffect(*spell, auraSpell, effect)) {
-                    matched = true;
-                    return false;
-                }
-                return true;
-            });
-            if (matched) {
-                return true;
-            }
-        }
     }
 
     return false;
@@ -16305,20 +15790,6 @@ bool CGUnit_C::HasDispellableAura(int32_t dispelType, int32_t harmful, bool mech
             if (effects) {
                 return true;
             }
-
-            if (LocalSpellData::HasExtendedEffects(spell.m_id)) {
-                bool matched = false;
-                LocalSpellData::ForEachSpellEffect(spell.m_id, [&](const SpellEffectCacheRow& effect) {
-                    if (effect.effect && effect.effectMechanic == static_cast<uint32_t>(dispelType)) {
-                        matched = true;
-                        return false;
-                    }
-                    return true;
-                });
-                if (matched) {
-                    return true;
-                }
-            }
         } else if ((1 << spell.m_dispelType) & mask) {
             return true;
         }
@@ -16375,12 +15846,6 @@ bool CGUnit_C::CheckAndReportSpellInhibitFlags(PendingSpellCast* cast, const Spe
     if (!spell) {
         SErrSetLastError(STORM_ERROR_INVALID_PARAMETER);
         return false;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        if (!LocalSpellData::ValidateExtendedSendCastEffectInhibits(this, cast, spell, item)) {
-            return false;
-        }
     }
 
     MapRec* map = g_mapDB.GetRecord(CGGameUI::m_iCurrentMapID);
@@ -16784,15 +16249,7 @@ void CGUnit_C::SortAuras() {
         while (i < this->GetAuraCount() && sorted[i].m_spellId) {
             AuraData& aura = this->m_auras[sorted[i].m_auraIndex];
 
-            bool accepts = (aura.m_flags & 0x7) != 0;
-            if (!accepts && LocalSpellData::HasExtendedEffects(aura.m_spellId)) {
-                SpellRec rec;
-                if (g_spellDB.GetRecord(aura.m_spellId, &rec)) {
-                    accepts = LocalSpellData::ExtendedAuraSideListAcceptsSpell(rec, &aura);
-                }
-            }
-
-            if (aura.m_spellId == sorted[i].m_spellId && accepts) {
+            if (aura.m_spellId == sorted[i].m_spellId && (aura.m_flags & 0x7)) {
                 i++;
                 continue;
             }
@@ -16815,14 +16272,7 @@ void CGUnit_C::SortAuras() {
 
         AuraData* aura = index < this->GetAuraCount() ? &this->m_auras[index] : nullptr;
 
-        bool accepts = (aura->m_flags & 0x7) != 0;
-        if (!accepts && LocalSpellData::HasExtendedEffects(aura->m_spellId)) {
-            if (g_spellDB.GetRecord(aura->m_spellId, &spell)) {
-                accepts = LocalSpellData::ExtendedAuraSideListAcceptsSpell(spell, aura);
-            }
-        }
-
-        if (!aura->m_spellId || !accepts || !g_spellDB.GetRecord(aura->m_spellId, &spell)) {
+        if (!aura->m_spellId || !(aura->m_flags & 0x7) || !g_spellDB.GetRecord(aura->m_spellId, &spell)) {
             continue;
         }
 
@@ -20195,9 +19645,7 @@ void CGUnit_C::AddHandItem(int32_t hand) {
     SHEATHE_TYPE sheatheType = static_cast<SHEATHE_TYPE>(item->m_sheatheType);
     bool sheathed;
 
-    if ((hand == 0 || hand == 1) && this->ShouldPreventMeleeUnsheath()) {
-        sheathed = true;
-    } else if (this->m_sheatheState == 2) {
+    if (this->m_sheatheState == 2) {
         sheathed = hand != 2;
     } else if (hand == 1 && this->IsPlayingUnarmedAnim()) {
         sheathed = CGUnit_C::ResolveSheathState(this->m_sheatheState, this->GetVirtualItem(0, false), item) == 0;
@@ -24127,17 +23575,6 @@ void CGUnit_C::CheckApplyPeriodicClientTriggers() {
                 Spell_C_ModifySpellValue(&spell, period, 19);
                 Spell_C_AddPeriodicClientTrigger(this->m_obj->m_guid, spell.m_id, spell.m_effectTriggerSpell[effect], period);
             }
-        }
-
-        if (LocalSpellData::HasExtendedEffects(spell.m_id)) {
-            LocalSpellData::ForEachSpellEffect(spell.m_id, [&](const SpellEffectCacheRow& effect) {
-                if (effect.effectIndex < 3) return true;
-                if (effect.effectApplyAuraName != 48) return true;
-                int32_t period = static_cast<int32_t>(effect.effectAmplitude);
-                Spell_C_ModifySpellValue(&spell, period, 19);
-                Spell_C_AddPeriodicClientTrigger(this->m_obj->m_guid, spell.m_id, effect.effectTriggerSpell, period);
-                return true;
-            });
         }
     }
 }

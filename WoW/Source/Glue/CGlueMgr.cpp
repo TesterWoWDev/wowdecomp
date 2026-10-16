@@ -1,5 +1,5 @@
 #include "CGlueMgr.h"
-#include "WoW/Source/Duskhaven/Duskhaven.h"
+#include "WoW/Source/ModCore/ModCore.h"
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
@@ -51,7 +51,6 @@
 #include "WoW/Source/Glue/CWOWClientStatus.h"
 #include "WoW/Source/Glue/GlueMgr.h"
 #include "WoW/Source/Glue/RealmList.h"
-#include "WoW/Source/Duskhaven/Streaming/ContentStreaming.h"
 #include "WoW/Source/LoadingScreen.h"
 #include "WoW/Source/Net/Types.h"
 #include "WoW/Source/SoundInterface/SoundInterface2.h"
@@ -715,7 +714,7 @@ void CGlueMgr::Resume() {
     SI2::RegisterScriptFunctions();
     AccountMsg_RegisterScriptFunctions();
     CGVideoOptions::RegisterScriptFunctions();
-    Duskhaven::RegisterScriptFunctions();
+    ModCore::ModManager::Get().OnGlueResume();
     CGlueMgr::s_scriptFunctionsLoaded = 1;
     FrameScript_CreateEvents(g_glueScriptEvents, sizeof(g_glueScriptEvents) / sizeof(g_glueScriptEvents[0]));
 
@@ -1089,7 +1088,7 @@ void CGlueMgr::Initialize() {
 int32_t CGlueMgr::Idle(const void* data, void* param) {
     struct GlueIdleGuard {
         ~GlueIdleGuard() {
-            Duskhaven::ContentStreaming::OnGlueIdle();
+            ModCore::ModManager::Get().OnGlueIdle();
         }
     } idleGuard;
 

@@ -23,7 +23,6 @@
 #include "Engine/Source/Model2/M2Cache.h"
 #include "Engine/Source/Model2/M2ModelLight.h"
 #include "Engine/Source/Model2/M2Scene.h"
-#include "WoW/Source/Duskhaven/Camera/CameraFade.h"
 #include "Engine/Source/Services/AsyncFile.h"
 #include "Engine/Source/Services/Camera.h"
 #include "Engine/Source/Services/ParticleSystem2.h"
@@ -579,10 +578,6 @@ void CM2Model::FreeExternalResources() {
 // VERIFY: 78234ce5 manual
 // OFFSET: 0x00824ED0
 int32_t CM2Model::Release() {
-    if (this->m_refCount == 1) {
-        Duskhaven::CameraFade::OnModelRelease(this);
-    }
-
     if (this->m_refCount-- == 1) {
         g_modelPool->Delete(this);
         return 0;

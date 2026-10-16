@@ -1,5 +1,5 @@
 #include "Spell_C.h"
-#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
+#include "WoW/Source/ModCore/ModCore.h"
 #include "WoW/Source/Magic/Types.h"
 #include "Engine/Source/Base/CDataStore.h"
 #include "Engine/Source/ConsoleBase/ConsoleVar.h"
@@ -49,7 +49,6 @@
 #include "WoW/Source/DB/Rec/ChrClassesRec.h"
 #include <cmath>
 #include "WoW/Source/DB/Rec/LockRec.h"
-#include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "WoW/Source/DB/Rec/SpellCastTimesRec.h"
 #include "WoW/Source/DB/Rec/SpellDurationRec.h"
 #include "WoW/Source/DB/Rec/SpellRangeRec.h"
@@ -301,18 +300,10 @@ bool Spell_C_IsRestrictedAbility(const SpellRec* spell) {
 // VERIFY: e2735a7d auto
 // OFFSET: 0x007FDE20
 bool Spell_C_HasEffect(const SpellRec* spell, int32_t effect) {
-    if (!spell) {
-        return false;
-    }
-
     for (uint32_t i = 0; i < sizeof(spell->m_effect) / sizeof(spell->m_effect[0]); i++) {
         if (spell->m_effect[i] == effect) {
             return true;
         }
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return LocalSpellData::HasSpellEffect(spell->m_id, effect);
     }
 
     return false;
@@ -419,21 +410,6 @@ int32_t Spell_C_GetPowerCost(const SpellRec* spell, const CGUnit_C* unit) {
         }
     }
 
-    if ((unit->m_obj->m_type & TYPEMASK_PLAYER) && LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectIndex < 3 || effect.effect != 97) {
-                return true;
-            }
-            uint32_t extraCost = LocalSpellData::GetExtendedEffect97ActionBarPowerCost(effect, *spell, unit);
-            if (extraCost > static_cast<uint32_t>((std::numeric_limits<int32_t>::max)() - cost)) {
-                cost = (std::numeric_limits<int32_t>::max)();
-                return false;
-            }
-            cost += static_cast<int32_t>(extraCost);
-            return true;
-        });
-    }
-
     return cost <= 0 ? 0 : cost;
 }
 
@@ -527,7 +503,7 @@ int32_t Spell_C_NeedsCooldownEvent(int32_t itemId) {
 
 // VERIFY: a6fcb014 manual
 // OFFSET: 0x0080B5D0
-static bool Spell_C_IsUsableActionInternal(CGUnit_C* unit, const SpellRec* spell, const WOWGUID& target, const ItemStats_C* item, bool ignoreControl) {
+bool Spell_C_IsUsableAction(CGUnit_C* unit, const SpellRec* spell, const WOWGUID& target, const ItemStats_C* item, bool ignoreControl) {
     if (!unit) {
         return false;
     }
@@ -721,15 +697,6 @@ static bool Spell_C_IsUsableActionInternal(CGUnit_C* unit, const SpellRec* spell
     }
 
     return (!(spell->m_attributesExD & 0x4000000) || static_cast<CGPlayer_C*>(unit)->IsInFlyableZone(1)) && (!(spell->m_attributesExC & 0x800) || !map || map->m_instanceType == 3) && (!(spell->m_attributesExF & 0x800) || !map || map->m_instanceType != 2);
-}
-
-bool Spell_C_IsUsableAction(CGUnit_C* unit, const SpellRec* spell, const WOWGUID& target, const ItemStats_C* item, bool ignoreControl) {
-    bool const nativeResult = Spell_C_IsUsableActionInternal(unit, spell, target, item, ignoreControl);
-    if (nativeResult || !spell || !LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return nativeResult;
-    }
-
-    return LocalSpellData::ExtendedCanCastTargetPredicatePasses(unit, spell, target);
 }
 
 // VERIFY: 59e5790d auto
@@ -1136,7 +1103,6 @@ void PendingSpellCast::OnSpellStartPacket(CDataStore* msg) {
 // VERIFY: ccbce7b4 manual
 // OFFSET: 0x0080FEE0
 int32_t Packet_Group_30(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::OnSpellGoOrStart(msgId, msg);
     SmartGUID castItem;
     SmartGUID caster;
     *msg >> castItem;
@@ -2877,19 +2843,10 @@ void Spell_C_CursorWorldObjectRotate() {
 // VERIFY: 5da1ec93 auto
 // OFFSET: 0x007FDF60
 bool SpellIsTrackingAura(const SpellRec* spell) {
-    if (!spell) {
-        return false;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        static constexpr uint32_t TRACKING_AURAS[] = { 44, 45, 151, 357 };
-        return LocalSpellData::HasAnySpellAura(spell->m_id, TRACKING_AURAS, 4);
-    }
-
     for (int32_t i = 0; i < 3; i++) {
         int32_t aura = spell->m_effectAura[i];
 
-        if (aura == 44 || aura == 45 || aura == 151 || aura == 357) {
+        if (aura == 44 || aura == 45 || aura == 151) {
             return true;
         }
     }
@@ -3013,14 +2970,6 @@ void Spell_C_CancelAutoRepeat(bool a1) {
 // VERIFY: 2524719c auto
 // OFFSET: 0x007FDE50
 bool SpellRec::HasAura(const SpellRec* spell, int32_t aura) {
-    if (!spell) {
-        return false;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return LocalSpellData::HasSpellAura(spell->m_id, static_cast<uint32_t>(aura));
-    }
-
     for (int32_t i = 0; i < 3; i++) {
         if (spell->m_effectAura[i] == aura) {
             return true;
@@ -3033,14 +2982,6 @@ bool SpellRec::HasAura(const SpellRec* spell, int32_t aura) {
 // VERIFY: 86c68872 auto
 // OFFSET: 0x007FE1B0
 int32_t SpellRec::IsHelpfulOrHarmful(const SpellRec* spell) {
-    if (!spell) {
-        return 0;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return static_cast<int32_t>(LocalSpellData::GetExtendedSpellHelpfulHarmful(spell));
-    }
-
     if (spell->m_targets & 0x100) {
         return 1;
     }
@@ -3145,29 +3086,6 @@ int32_t SpellRec::IsHelpfulOrHarmful(const SpellRec* spell) {
 // VERIFY: 69f73b82 auto
 // OFFSET: 0x008009B0
 bool SpellRec::WillSummonCritter(const SpellRec* spell) {
-    if (!spell) {
-        return false;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        bool found = false;
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectApplyAuraName == 78) {
-                found = true;
-                return false;
-            }
-            if (effect.effect == 28) {
-                SummonPropertiesRec* properties = g_summonPropertiesDB.GetRecord(effect.effectMiscValueB);
-                if (properties && properties->m_slot == 5) {
-                    found = true;
-                    return false;
-                }
-            }
-            return true;
-        });
-        return found;
-    }
-
     if (spell->m_effect[0] == 28) {
         SummonPropertiesRec* properties = g_summonPropertiesDB.GetRecord(spell->m_effectMiscValueB[0]);
 
@@ -3730,86 +3648,6 @@ void Spell_C_GetMinMaxPoints(const SpellRec* spell, uint32_t effectIndex, float*
         return;
     }
 
-    if (effectIndex >= 3 || LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        const SpellEffectCacheRow* extEffect = nullptr;
-        if (LocalSpellData::TryGetSpellEffect(spell->m_id, effectIndex, extEffect) && extEffect) {
-            bool periodic;
-            bool rounded;
-            bool damage = GetEffectModifierType(extEffect->effect, &periodic, extEffect->effectApplyAuraName, &rounded);
-            int32_t level = spellLevel ? spellLevel : Spell_C_GetSpellLevel(spell, isPet, isUnit);
-
-            if (spell->m_baseLevel > 0) {
-                level -= spell->m_baseLevel;
-            }
-
-            if (level < 0) {
-                level = 0;
-            }
-
-            CSoftFloat perLevel = *reinterpret_cast<const CSoftFloat*>(&extEffect->effectRealPointsPerLevel);
-            CSoftFloat minValue = CSoftFloat::FromInt(extEffect->effectBasePoints + 1) + perLevel * CSoftFloat::FromInt(level);
-            CSoftFloat maxValue = CSoftFloat::FromInt(extEffect->effectBasePoints + extEffect->effectDieSides) + perLevel * CSoftFloat::FromInt(level);
-
-            if (!noModifiers) {
-                Spell_C_ModifySpellValue(spell, minValue, 8);
-                Spell_C_ModifySpellValue(spell, maxValue, 8);
-
-                if (effectIndex == 0) {
-                    Spell_C_ModifySpellValue(spell, minValue, 3);
-                    Spell_C_ModifySpellValue(spell, maxValue, 3);
-                } else if (effectIndex == 1) {
-                    Spell_C_ModifySpellValue(spell, minValue, 12);
-                    Spell_C_ModifySpellValue(spell, maxValue, 12);
-                } else if (effectIndex == 2) {
-                    Spell_C_ModifySpellValue(spell, minValue, 23);
-                    Spell_C_ModifySpellValue(spell, maxValue, 23);
-                }
-
-                if (damage) {
-                    if (periodic) {
-                        Spell_C_ModifySpellValue(spell, minValue, 22);
-                        Spell_C_ModifySpellValue(spell, maxValue, 22);
-                    } else {
-                        Spell_C_ModifySpellValue(spell, minValue, 0);
-                        Spell_C_ModifySpellValue(spell, maxValue, 0);
-                    }
-                }
-
-                int32_t aura = extEffect->effectApplyAuraName;
-
-                if (aura == 10 || aura == 103 || aura == 183) {
-                    Spell_C_ModifySpellValue(spell, minValue, 2);
-                    Spell_C_ModifySpellValue(spell, maxValue, 2);
-                }
-            }
-
-            minValue.m_bits += (minValue.m_bits & 0x7F800000) ? 0x3800000 : 0;
-            minValue = CSoftFloat::Round(minValue);
-            minValue.m_bits = (minValue.m_bits - 0x3800000) & ~static_cast<uint32_t>(static_cast<int32_t>((minValue.m_bits - 0x4000000) ^ minValue.m_bits) >> 31);
-            maxValue.m_bits += (maxValue.m_bits & 0x7F800000) ? 0x3800000 : 0;
-            maxValue = CSoftFloat::Round(maxValue);
-            maxValue.m_bits = (maxValue.m_bits - 0x3800000) & ~static_cast<uint32_t>(static_cast<int32_t>((maxValue.m_bits - 0x4000000) ^ maxValue.m_bits) >> 31);
-
-            if (rounded) {
-                CSoftFloat low = CSoftFloat::Floor(minValue);
-                *minPoints = *reinterpret_cast<float*>(&low);
-                CSoftFloat high = CSoftFloat::Ceil(maxValue);
-                *maxPoints = *reinterpret_cast<float*>(&high);
-            } else {
-                *minPoints = *reinterpret_cast<float*>(&minValue);
-                *maxPoints = *reinterpret_cast<float*>(&maxValue);
-            }
-
-            if (*minPoints < 0.0f) *minPoints = 0.0f;
-            if (*maxPoints < 0.0f) *maxPoints = 0.0f;
-            return;
-        }
-
-        if (effectIndex >= 3) {
-            return;
-        }
-    }
-
     bool periodic;
     bool rounded;
     bool damage = GetEffectModifierType(spell->m_effect[effectIndex], &periodic, spell->m_effectAura[effectIndex], &rounded);
@@ -3929,20 +3767,6 @@ int32_t Spell_C_GetDuration(const SpellRec* spell, int32_t isPet, int32_t isUnit
         }
     }
 
-    if (duration > 0 && applyHaste && LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        bool hasPeriodic = false;
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectAmplitude != 0) {
-                hasPeriodic = true;
-                return false;
-            }
-            return true;
-        });
-        if (hasPeriodic && ((spell->m_attributesExE & 0x2000) || player->AffectedByAura(316, spell)) && !(spell->m_attributesExC & 0x20000000) && player->m_unit->m_unitModCastSpeed >= 0.001f) {
-            duration = CMath::fint_(duration * player->m_unit->m_unitModCastSpeed);
-        }
-    }
-
     return duration;
 }
 
@@ -3969,21 +3793,6 @@ bool Spell_C_HasNoReagentCost(CGPlayer_C* player, const SpellRec* spell) {
 // VERIFY: bfe60446 manual
 // OFFSET: 0x008016C0
 int32_t Spell_C_GetMinMaxPoints(const SpellRec* spell, uint32_t effectIndex, int32_t* minPoints, int32_t* maxPoints, int32_t a5, int32_t a6, int32_t a7, int32_t a8) {
-    if (spell && LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        const SpellEffectCacheRow* effect = nullptr;
-        if (LocalSpellData::TryGetSpellEffect(spell->m_id, effectIndex, effect) && effect &&
-            (effect->effect == 95 || effect->effect == 116)) {
-            int32_t capability = (std::max)(0, static_cast<int32_t>(effect->effectBasePoints + 1));
-            if (effect->effect == 95) {
-                CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-                capability = LocalSpellData::GetExtendedSkinningCapability(spell->m_id, player, effect->effectMiscValue);
-            }
-            if (minPoints) *minPoints = capability;
-            if (maxPoints) *maxPoints = capability;
-            return 0;
-        }
-    }
-
     float low;
     float high;
     Spell_C_GetMinMaxPoints(spell, effectIndex, &low, &high, a5, a6, a7, a8);
@@ -4440,23 +4249,6 @@ static bool SpellCancelsAura(const SpellRec* spell, const SpellRec* aura, uint32
         return false;
     }
 
-    int32_t targetAura = 0;
-    int32_t targetMechanic = aura->m_mechanic;
-    if (auraEffect < 3) {
-        targetAura = aura->m_effectAura[auraEffect];
-        if (aura->m_effectMechanic[auraEffect]) {
-            targetMechanic = aura->m_effectMechanic[auraEffect];
-        }
-    } else {
-        const SpellEffectCacheRow* ext = nullptr;
-        if (LocalSpellData::TryGetSpellEffect(aura->m_id, auraEffect, ext) && ext) {
-            targetAura = ext->effectApplyAuraName;
-            if (ext->effectMechanic) {
-                targetMechanic = ext->effectMechanic;
-            }
-        }
-    }
-
     for (uint32_t i = 0; i < sizeof(spell->m_effect) / sizeof(spell->m_effect[0]); i++) {
         if (spell->m_effect[i] != 6) {
             continue;
@@ -4466,7 +4258,7 @@ static bool SpellCancelsAura(const SpellRec* spell, const SpellRec* aura, uint32
 
         switch (spell->m_effectAura[i]) {
             case 38:
-                if (misc == targetAura) {
+                if (misc == aura->m_effectAura[auraEffect]) {
                     return true;
                 }
 
@@ -4488,52 +4280,11 @@ static bool SpellCancelsAura(const SpellRec* spell, const SpellRec* aura, uint32
                 break;
 
             case 77:
-                if (misc == aura->m_mechanic || misc == targetMechanic) {
+                if (misc == aura->m_mechanic || misc == aura->m_effectMechanic[auraEffect]) {
                     return true;
                 }
 
                 break;
-        }
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        bool cancels = false;
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectIndex < 3 || effect.effect != 6) {
-                return true;
-            }
-            int32_t misc = effect.effectMiscValue;
-            switch (effect.effectApplyAuraName) {
-                case 38:
-                    if (misc == targetAura) {
-                        cancels = true;
-                        return false;
-                    }
-                    break;
-                case 39:
-                case 267:
-                    if (!(aura->m_attributesExB & 0x4000000) && (aura->m_schoolMask & misc)) {
-                        cancels = true;
-                        return false;
-                    }
-                    break;
-                case 41:
-                    if (misc == aura->m_dispelType) {
-                        cancels = true;
-                        return false;
-                    }
-                    break;
-                case 77:
-                    if (misc == aura->m_mechanic || misc == targetMechanic) {
-                        cancels = true;
-                        return false;
-                    }
-                    break;
-            }
-            return true;
-        });
-        if (cancels) {
-            return true;
         }
     }
 
@@ -4543,10 +4294,6 @@ static bool SpellCancelsAura(const SpellRec* spell, const SpellRec* aura, uint32
 // VERIFY: 4e168416 manual
 // OFFSET: 0x007FE3E0
 uint32_t GetRequiredAuraVisionBitmask(const SpellRec* spell) {
-    if (!spell) {
-        return 0;
-    }
-
     uint32_t mask = spell->m_requiredAuraVision > 0 ? 1 << (spell->m_requiredAuraVision - 1) : 0;
 
     for (uint32_t i = 0; i < sizeof(spell->m_effectAura) / sizeof(spell->m_effectAura[0]); i++) {
@@ -4557,17 +4304,6 @@ uint32_t GetRequiredAuraVisionBitmask(const SpellRec* spell) {
         if (spell->m_effectAura[i] == 19 && (!spell->m_effectMiscValue[i] || spell->m_effectMiscValue[i] == 10)) {
             mask |= 0x40;
         }
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectApplyAuraName == 17) {
-                mask |= 0x20;
-            } else if (effect.effectApplyAuraName == 19 && (effect.effectMiscValue == 0 || effect.effectMiscValue == 10)) {
-                mask |= 0x40;
-            }
-            return true;
-        });
     }
 
     return mask;
@@ -4765,31 +4501,6 @@ bool Spell_C_CancelsAuraEffect(const CGUnit_C* unit, const SpellRec* spell, int3
                     }
                 }
 
-                return false;
-            }
-        }
-
-        if (LocalSpellData::HasExtendedEffects(spellId)) {
-            bool failed = false;
-            LocalSpellData::ForEachSpellEffect(spellId, [&](const SpellEffectCacheRow& ext) {
-                if (ext.effectIndex < 3 || ext.effectApplyAuraName != static_cast<uint32_t>(auraType)) {
-                    return true;
-                }
-                found = true;
-                if (!SpellCancelsAura(spell, &aura, ext.effectIndex)) {
-                    if (reason) {
-                        if (ext.effectMechanic) {
-                            *reason = ext.effectMechanic;
-                        } else if (aura.m_mechanic) {
-                            *reason = aura.m_mechanic;
-                        }
-                    }
-                    failed = true;
-                    return false;
-                }
-                return true;
-            });
-            if (failed) {
                 return false;
             }
         }
@@ -5154,10 +4865,6 @@ int32_t Packet_SMSG_PLAY_SPELL_IMPACT(void* param, NETMESSAGE msgId, uint32_t ti
 // VERIFY: 23ec14f4 auto
 // OFFSET: 0x00800950
 bool SpellAppliesNonStanceShapeshift(const SpellRec* spell) {
-    if (!spell) {
-        return false;
-    }
-
     for (uint32_t i = 0; i < sizeof(spell->m_effectAura) / sizeof(spell->m_effectAura[0]); i++) {
         if (spell->m_effectAura[i] != 36) {
             continue;
@@ -5168,22 +4875,6 @@ bool SpellAppliesNonStanceShapeshift(const SpellRec* spell) {
         if (!form || !(form->m_flags & 0x1)) {
             return true;
         }
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        bool result = false;
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectApplyAuraName != 36) {
-                return true;
-            }
-            SpellShapeshiftFormRec* form = g_spellShapeshiftFormDB.GetRecord(effect.effectMiscValue);
-            if (!form || !(form->m_flags & 0x1)) {
-                result = true;
-                return false;
-            }
-            return true;
-        });
-        return result;
     }
 
     return false;
@@ -5410,14 +5101,6 @@ void Spell_C_DelayCooldown(int32_t index, int32_t spellId, int32_t delay) {
 // VERIFY: 019f1364 auto
 // OFFSET: 0x007FDF20
 static bool SpellHasUnitAuraEffect(const SpellRec* spell) {
-    if (!spell) {
-        return false;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return LocalSpellData::HasSpellEffect(spell->m_id, 6);
-    }
-
     for (uint32_t i = 0; i < sizeof(spell->m_effect) / sizeof(spell->m_effect[0]); i++) {
         if (Spell_IsUnitAuraEffect(spell->m_effect[i])) {
             return true;
@@ -5484,10 +5167,6 @@ bool Spell_C_IsActiveSpell(const SpellRec* spell, const CGUnit_C* unit) {
         }
     }
 
-    if (!active && LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return LocalSpellData::ExtendedSpellCurrentOnUnit(spell, unit);
-    }
-
     return active;
 }
 
@@ -5495,11 +5174,6 @@ bool Spell_C_IsActiveSpell(const SpellRec* spell, const CGUnit_C* unit) {
 // OFFSET: 0x00802F80
 void Spell_C_CancelAura(const SpellRec* spell, CGUnit_C* unit, int32_t auraIndex) {
     if (!spell || !unit) {
-        return;
-    }
-
-    if (LocalSpellData::ExtraEffectsNeedAuraState(spell)) {
-        LocalSpellData::HandleExtendedCurrentAuraSideEffects(spell, unit, auraIndex);
         return;
     }
 
@@ -6083,7 +5757,8 @@ void Spell_C_Destroy() {
     s_periodicClientTriggers.Clear();
     s_destLocSpellCasts.InternalClear(0);
     s_enableErrorSpeechCVar = nullptr;
-    Duskhaven::OnSpellDestroy();
+
+    ModCore::ModManager::Get().OnSpellDestroy();
 }
 
 // VERIFY: f60bc498 manual
@@ -7354,7 +7029,7 @@ bool Spell_C_HaveEquippedSpellItems(CGUnit_C* unit, const SpellRec* spell, bool 
 
 // VERIFY: 66bd63ba manual
 // OFFSET: 0x00809610
-static bool Spell_C_RangeCheckSelectedInternal(CGUnit_C* caster, const SpellRec* spell, WOWGUID target, uint8_t* inRange, bool report, PendingSpellCast* cast) {
+bool Spell_C_RangeCheckSelected(CGUnit_C* caster, const SpellRec* spell, WOWGUID target, uint8_t* inRange, bool report, PendingSpellCast* cast) {
     if (!target) {
         target = CGGameUI::m_lockedTarget;
     }
@@ -7532,27 +7207,6 @@ static bool Spell_C_RangeCheckSelectedInternal(CGUnit_C* caster, const SpellRec*
     }
 
     return true;
-}
-
-bool Spell_C_RangeCheckSelected(CGUnit_C* caster, const SpellRec* spell, WOWGUID target, uint8_t* inRange, bool report, PendingSpellCast* cast) {
-    uint8_t const nativeInRange = inRange ? *inRange : 0;
-    bool const nativeResult = Spell_C_RangeCheckSelectedInternal(caster, spell, target, inRange, report, cast);
-    if (nativeResult || !spell || !LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return nativeResult;
-    }
-
-    uint8_t extendedInRange = nativeInRange;
-    if (LocalSpellData::ValidateExtendedTargetMaskEffects(caster, spell, target, &extendedInRange, report, cast)) {
-        if (inRange) {
-            *inRange = extendedInRange;
-        }
-        return true;
-    }
-
-    if (inRange) {
-        *inRange = nativeInRange;
-    }
-    return nativeResult;
 }
 
 // VERIFY: 5b621a4e auto
@@ -7737,28 +7391,12 @@ static bool CheckItemRequirement(const PendingSpellCast* cast, const SpellRec* s
         }
     }
 
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        bool failed = false;
-        LocalSpellData::ForEachSpellEffect(spell->m_id, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectIndex >= 3 && (effect.effect == 53 || effect.effect == 54 || effect.effect == 156)) {
-                if (!CheckEnchantItemLevel(cast, spell, stats, item, reason)) {
-                    failed = true;
-                    return false;
-                }
-            }
-            return true;
-        });
-        if (failed) {
-            return false;
-        }
-    }
-
     return true;
 }
 
 // VERIFY: 126c913a manual
 // OFFSET: 0x00803500
-static bool ValidateSpellTargetInternal(CGUnit_C* caster, const SpellRec* spell, uint32_t count, CGUnit_C** targets, int32_t* reason, bool casterIncluded) {
+static bool ValidateSpellTarget(CGUnit_C* caster, const SpellRec* spell, uint32_t count, CGUnit_C** targets, int32_t* reason, bool casterIncluded) {
     if (!count) {
         return true;
     }
@@ -7901,18 +7539,6 @@ static bool ValidateSpellTargetInternal(CGUnit_C* caster, const SpellRec* spell,
 
     *reason = dispel ? 86 : 87;
     return false;
-}
-
-static bool ValidateSpellTarget(CGUnit_C* caster, const SpellRec* spell, uint32_t count, CGUnit_C** targets, int32_t* reason, bool casterIncluded) {
-    if (!ValidateSpellTargetInternal(caster, spell, count, targets, reason, casterIncluded)) {
-        return false;
-    }
-
-    if (spell && LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        return LocalSpellData::ValidateExtendedAuraTargetEffects(caster, spell, count, targets, reason);
-    }
-
-    return true;
 }
 
 // VERIFY: df42f3b1 manual
@@ -8309,11 +7935,6 @@ static bool Spell_C_IsSpellPending(const WOWGUID& castItem, int32_t spellId, con
 // VERIFY: 6fd9b453 manual
 // OFFSET: 0x0080C790
 static bool Spell_C_BeginCast(CGUnit_C* caster, const SpellRec* spell, WOWGUID target, PendingSpellCast* cast, bool confirmed) {
-    if (spell && LocalSpellData::ExtraEffectsNeedCastTarget(spell) &&
-        LocalSpellData::TryPrepareExtendedCastTarget(caster, spell, target, cast, confirmed)) {
-        return true;
-    }
-
     uint32_t needTargets = spell->m_targets;
     s_needTargets = needTargets;
     bool noTarget = false;
@@ -9439,7 +9060,6 @@ void Spell_C_ClearPetCooldowns() {
 // VERIFY: b323a3a8 manual
 // OFFSET: 0x00801C90
 int32_t Packet_MSG_CHANNEL_START(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::OnChannelStart(msg);
     SmartGUID smartGuid;
     *msg >> smartGuid;
     WOWGUID guid = smartGuid;
@@ -9464,13 +9084,13 @@ int32_t Packet_MSG_CHANNEL_START(void* param, NETMESSAGE msgId, uint32_t time, C
         }
     }
 
+    ModCore::ModManager::Get().OnChannelStart(msg);
     return 1;
 }
 
 // VERIFY: e57ade70 manual
 // OFFSET: 0x00801DB0
 int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    Duskhaven::OnChannelUpdate(msg);
     SmartGUID smartGuid;
     *msg >> smartGuid;
     WOWGUID guid = smartGuid;
@@ -9479,6 +9099,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
     CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
     if (!unit) {
+        ModCore::ModManager::Get().OnChannelUpdate(msg);
         return 1;
     }
 
@@ -9501,6 +9122,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
         }
     }
 
+    ModCore::ModManager::Get().OnChannelUpdate(msg);
     return 1;
 }
 

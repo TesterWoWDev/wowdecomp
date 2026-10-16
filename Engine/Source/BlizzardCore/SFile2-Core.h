@@ -189,7 +189,10 @@ int32_t STORMAPI SFileReadFile(SFileImpl* file, void* buffer, uint32_t count, ui
 class MD5;
 
 void SFileClearAllFileFlags();
-int32_t STORMAPI SFileSetFileBlockEntryMD5(const char* name, const MD5& md5);
 void STORMAPI SFileSetSignatureCallbacks(int32_t enable);
+int32_t STORMAPI SFileSetFileBlockEntryMD5(const char* name, const MD5& md5);
+typedef bool (*VfsStorageHook)(const char* filename, void** outStreamHandle);
+void STORMAPI Storm_RegisterStorageHook(VfsStorageHook hook);
+VfsStorageHook STORMAPI Storm_GetStorageHook();
 
 #endif

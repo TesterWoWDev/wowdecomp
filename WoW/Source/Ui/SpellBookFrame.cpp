@@ -35,8 +35,6 @@
 #include "WoW/Source/DB/Rec/SpellVisualEffectNameRec.h"
 #include "WoW/Source/DB/Rec/SpellVisualKitRec.h"
 #include "WoW/Source/DB/Rec/SpellVisualRec.h"
-#include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
-#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 #include <cstdio>
 
 // STATIC: 0x00BE8E24
@@ -272,13 +270,11 @@ void CGSpellBook::ClearSpells() {
     for (uint32_t i = 0; i < sizeof(CGSpellBook::m_totemSpells) / sizeof(CGSpellBook::m_totemSpells[0]); i++) {
         CGSpellBook::m_totemSpells[i].Clear();
     }
-
-    LocalSpellData::ResetLocalKnownEffects();
 }
 
 // VERIFY: f6883164 manual
 // OFFSET: 0x00542030
-static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t replaceSpell) {
+void CGSpellBook::AddKnownSpell(int32_t spellId, int32_t notify, int32_t replaceSpell) {
     SpellRec spell;
 
     if (!g_spellDB.GetRecord(spellId, &spell)) {
@@ -287,82 +283,63 @@ static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t repla
 
     s_knownSpellBits.m_bits.m_data[static_cast<uint32_t>(spellId) >> 5] |= 1 << (spellId & 0x1F);
 
-    auto RegisterSpellBookEffect = [&](int32_t effect, int32_t misc) {
-        switch (effect) {
-            case 28:
-            case 56: {
-                int32_t creature = misc;
+    switch (spell.m_effect[0]) {
+        case 28:
+        case 56: {
+            int32_t creature = spell.m_effectMiscValue[0];
 
-                if (creature) {
-                    uint32_t i;
+            if (creature) {
+                uint32_t i;
 
-                    for (i = 0; i < s_summonCreatures.Count(); i++) {
-                        if (s_summonCreatures.m_data[i] == creature) {
-                            break;
-                        }
-                    }
-
-                    if (i >= s_summonCreatures.Count()) {
-                        *s_summonCreatures.New() = creature;
+                for (i = 0; i < s_summonCreatures.Count(); i++) {
+                    if (s_summonCreatures.m_data[i] == creature) {
+                        break;
                     }
                 }
 
-                break;
-            }
-
-            case 33: {
-                *s_openLockSpells.New() = spellId;
-                break;
-            }
-
-            case 39: {
-                if (misc >= 0 && misc < CGSpellBook::m_languageSpells.Count()) {
-                    CGSpellBook::m_languageSpells.m_data[misc] = spellId;
-                    CGChat::UpdateLanguages();
+                if (i >= s_summonCreatures.Count()) {
+                    *s_summonCreatures.New() = creature;
                 }
-                break;
             }
 
-            case 83: {
-                CGSpellBook::m_duelSpell = spellId;
-                break;
-            }
-
-            case 84: {
-                CGSpellBook::m_stuckSpell = spellId;
-                break;
-            }
-
-            case 95: {
-                if (misc >= 0 && misc < static_cast<int32_t>(sizeof(s_skinningSpells) / sizeof(s_skinningSpells[0]))) {
-                    s_skinningSpells[misc] = spellId;
-                }
-                break;
-            }
-
-            case 116: {
-                s_skinPlayerCorpseSpell = spellId;
-                break;
-            }
-
-            case 152: {
-                CGSpellBook::m_summonFriendSpell = spellId;
-                break;
-            }
+            break;
         }
-    };
 
-    for (uint32_t i = 0; i < 3; i++) {
-        RegisterSpellBookEffect(spell.m_effect[i], spell.m_effectMiscValue[i]);
-    }
+        case 33: {
+            *s_openLockSpells.New() = spellId;
+            break;
+        }
 
-    if (LocalSpellData::HasExtendedEffects(spellId)) {
-        LocalSpellData::ForEachSpellEffect(spellId, [&](const SpellEffectCacheRow& effect) {
-            if (effect.effectIndex >= 3) {
-                RegisterSpellBookEffect(effect.effect, effect.effectMiscValue);
-            }
-            return true;
-        });
+        case 39: {
+            CGSpellBook::m_languageSpells.m_data[spell.m_effectMiscValue[0]] = spellId;
+            CGChat::UpdateLanguages();
+            break;
+        }
+
+        case 83: {
+            CGSpellBook::m_duelSpell = spellId;
+            break;
+        }
+
+        case 84: {
+            CGSpellBook::m_stuckSpell = spellId;
+            break;
+        }
+
+        case 95: {
+            s_skinningSpells[spell.m_effectMiscValue[0]] = spellId;
+            break;
+        }
+
+        case 116: {
+            s_skinPlayerCorpseSpell = spellId;
+            break;
+        }
+
+        case 152: {
+            CGSpellBook::m_summonFriendSpell = spellId;
+            break;
+        }
     }
 
     if (SpellIsTrackingAura(&spell)) {
@@ -497,7 +474,7 @@ static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t repla
     }
 
     if (spell.m_attributes & 0x20) {
-        if (notify && !Duskhaven::HasAttribute(spellId, Duskhaven::SPELL_ATTR2_CU_SUPPRESS_LEARN_MSG)) {
+        if (notify) {
             CGGameUI::DisplayError(ERR_LEARN_RECIPE_S, spell.m_name);
         }
 
@@ -526,9 +503,7 @@ static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t repla
         }
 
         if (notify) {
-            if (!Duskhaven::HasAttribute(spellId, Duskhaven::SPELL_ATTR2_CU_SUPPRESS_LEARN_MSG)) {
-                CGGameUI::DisplayError(ERR_LEARN_COMPANION_S, creature->m_name[0]);
-            }
+            CGGameUI::DisplayError(ERR_LEARN_COMPANION_S, creature->m_name[0]);
             CGSpellBook::UpdateCompanions();
             FrameScript_SignalEvent(SCRIPT_EVENT_COMPANION_LEARNED, nullptr);
         }
@@ -536,7 +511,7 @@ static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t repla
         return;
     }
 
-    if (notify && !Duskhaven::HasAttribute(spellId, Duskhaven::SPELL_ATTR2_CU_SUPPRESS_LEARN_MSG)) {
+    if (notify) {
         char name[512];
 
         if (*spell.m_nameSubtext) {
@@ -714,11 +689,6 @@ static void AddKnownSpellInternal(int32_t spellId, int32_t notify, int32_t repla
     }
 }
 
-void CGSpellBook::AddKnownSpell(int32_t spellId, int32_t notify, int32_t replaceSpell) {
-    AddKnownSpellInternal(spellId, notify, replaceSpell);
-    LocalSpellData::RefreshLocalKnownEffects();
-}
-
 // VERIFY: fe19e0f0 auto
 // OFFSET: 0x0053CEC0
 void CGSpellBook::UpdateCompanions() {
@@ -743,8 +713,6 @@ void CGSpellBook::UpdateCompanions() {
 // VERIFY: 3365a24e manual
 // OFFSET: 0x0053CA70
 void CGSpellBook::UpdateSpells(int32_t a1, int32_t a2, int32_t a3) {
-    LocalSpellData::InvalidateProfessionRecipes();
-
     if (a1) {
         qsort(s_skillInfos.m_data, s_numSkillInfos, sizeof(s_skillInfos.m_data[0]), SortSkillInfoByName);
         qsort(s_spellList, s_numSpells, sizeof(s_spellList[0]), SortSpellsForDisplay);
@@ -1320,17 +1288,6 @@ void CGSpellBook::UpdateSelection() {
 // VERIFY: e14c5005 manual
 // OFFSET: 0x0053B410
 int32_t CGSpellBook::GetCompanionType(const SpellRec* spell) {
-    if (!spell) {
-        return 2;
-    }
-
-    if (LocalSpellData::HasExtendedEffects(spell->m_id)) {
-        if (LocalSpellData::HasSpellEffect(spell->m_id, 28)) {
-            return 0;
-        }
-        return LocalSpellData::HasSpellAura(spell->m_id, 78) ? 1 : 2;
-    }
-
     if (spell->m_effect[0] == 28) {
         return 0;
     }
@@ -2377,7 +2334,6 @@ void CGSpellBook::DelKnownSpell(int32_t spellId, int32_t notify) {
     }
 
     CGSpellBook::UpdateSpells(removed, 0, 1);
-    LocalSpellData::RefreshLocalKnownEffects();
 }
 
 // VERIFY: 1789a24e manual

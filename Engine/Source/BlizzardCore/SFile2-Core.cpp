@@ -1238,9 +1238,25 @@ int32_t STORMAPI SFile::LoadFile(const char* name, void** data, uint32_t* size, 
     return SFile::ReadFile(nullptr, name, data, size, extra, 0, overlapped);
 }
 
+static VfsStorageHook s_stormStorageHook = nullptr;
+
+void STORMAPI Storm_RegisterStorageHook(VfsStorageHook hook) {
+    s_stormStorageHook = hook;
+}
+
+VfsStorageHook STORMAPI Storm_GetStorageHook() {
+    return s_stormStorageHook;
+}
+
 // VERIFY: e18d80b5 auto
 // OFFSET: 0x00424F80
 int32_t STORMAPI SFileOpenFile(const char* name, SFileImpl** result) {
+    if (s_stormStorageHook) {
+        void* streamHandle = nullptr;
+        if (s_stormStorageHook(name, &streamHandle)) {
+            // External storage streamer intercepted
+        }
+    }
     return SFile::OpenEx(nullptr, name, 0, result);
 }
 

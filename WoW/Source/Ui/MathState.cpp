@@ -13,14 +13,8 @@
 #include "WoW/Source/Ui/PaperDollInfoFrame.h"
 #include "WoW/Source/Ui/PetInfo.h"
 #include "WoW/Source/Ui/QuestTextParser.h"
-#include "WoW/Source/Duskhaven/Character/CharacterDefines.h"
-#include "WoW/Source/Duskhaven/DBC/Defs/SpellEffect.h"
-#include "WoW/Source/Duskhaven/DBC/Defs/SpellEffectScalars.h"
-#include "WoW/Source/Duskhaven/Tooltip/SpellTooltipExtensions.h"
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
-#include <cstring>
 
 // STATIC: 0x00ACE898
 static const MathFunction s_mathFunctions[12] = {
@@ -73,72 +67,16 @@ static uint8_t LookupMathFunction(const char* name, int32_t* argCount) {
 
 // VERIFY: 924c0932 auto
 // OFFSET: 0x00576B50
-static uint16_t LookupMathVariable(const char* name) {
+static uint8_t LookupMathVariable(const char* name) {
     if (!name || !*name) {
         return 0;
     }
 
     for (uint32_t i = 0; i < 140; i++) {
         if (!SStrCmp(name, s_mathVariables[i], STORM_MAX_STR)) {
-            return static_cast<uint16_t>(i + MATHOP_STAT_STRENGTH);
+            return i + MATHOP_STAT_STRENGTH;
         }
     }
-
-    if (!SStrCmp(name, "hp", STORM_MAX_STR)) return MATHOP_EXT_HP;
-    if (!SStrCmp(name, "HP", STORM_MAX_STR)) return MATHOP_EXT_HP_UPPER;
-    if (!SStrCmp(name, "dpct", STORM_MAX_STR)) return MATHOP_EXT_DPCT;
-    if (!SStrCmp(name, "ppct", STORM_MAX_STR)) return MATHOP_EXT_PPCT;
-    if (!SStrCmp(name, "MASTERY", STORM_MAX_STR)) return MATHOP_EXT_MASTERY;
-
-    if (!std::strncmp(name, "mastery", 7) && std::isdigit(static_cast<unsigned char>(name[7])) && name[8] == '\0') {
-        int idx = name[7] - '0';
-        if (idx >= 1 && idx <= 4) return static_cast<uint16_t>(MATHOP_EXT_MASTERY_1 + (idx - 1));
-    }
-
-    if (!std::strncmp(name, "power", 5) && std::isdigit(static_cast<unsigned char>(name[5])) && name[6] == '\0') {
-        int idx = name[5] - '0';
-        if (idx >= 1 && idx <= 7) return static_cast<uint16_t>(MATHOP_EXT_POWER_1 + (idx - 1));
-    }
-
-    if (!std::strncmp(name, "POWER", 5) && std::isdigit(static_cast<unsigned char>(name[5])) && name[6] == '\0') {
-        int idx = name[5] - '0';
-        if (idx >= 1 && idx <= 7) return static_cast<uint16_t>(MATHOP_EXT_POWER_1_UPPER + (idx - 1));
-    }
-
-    auto parseIndex = [](const char* str, size_t prefixLen, uint32_t& outIdx) -> bool {
-        const char* p = str + prefixLen;
-        if (!*p || !std::isdigit(static_cast<unsigned char>(*p))) return false;
-        char* end = nullptr;
-        unsigned long val = std::strtoul(p, &end, 10);
-        if (!end || *end != '\0' || val < 1 || val > 32) return false;
-        outIdx = static_cast<uint32_t>(val);
-        return true;
-    };
-
-    uint32_t idx = 0;
-    if (!std::strncmp(name, "ppl", 3) && parseIndex(name, 3, idx)) return static_cast<uint16_t>(MATHOP_EXT_PPL_1 + (idx - 1));
-    if (!std::strncmp(name, "PPL", 3) && parseIndex(name, 3, idx)) return static_cast<uint16_t>(MATHOP_EXT_PPL_1_UPPER + (idx - 1));
-    if (!std::strncmp(name, "bon", 3) && parseIndex(name, 3, idx)) return static_cast<uint16_t>(MATHOP_EXT_BON_1 + (idx - 1));
-
-    if (!std::strncmp(name, "bc", 2) && parseIndex(name, 2, idx)) return static_cast<uint16_t>(MATHOP_EXT_BC_1 + (idx - 1));
-    if (!std::strncmp(name, "BC", 2) && parseIndex(name, 2, idx)) return static_cast<uint16_t>(MATHOP_EXT_BC_1_UPPER + (idx - 1));
-
-    if (name[0] == 'm' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_M_1 + (idx - 1));
-    if (name[0] == 'M' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_M_1_UPPER + (idx - 1));
-    if (name[0] == 'a' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_A_1 + (idx - 1));
-    if (name[0] == 'A' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_A_1_UPPER + (idx - 1));
-    if (name[0] == 'x' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_X_1 + (idx - 1));
-    if (name[0] == 'X' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_X_1_UPPER + (idx - 1));
-    if (name[0] == 't' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_T_1 + (idx - 1));
-    if (name[0] == 'T' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_T_1_UPPER + (idx - 1));
-    if (name[0] == 'b' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_B_1 + (idx - 1));
-    if (name[0] == 'B' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_B_1_UPPER + (idx - 1));
-    if (name[0] == 'e' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_E_1 + (idx - 1));
-    if (name[0] == 'E' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_E_1_UPPER + (idx - 1));
-    if (name[0] == 'f' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_F_1 + (idx - 1));
-    if (name[0] == 'F' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_F_1_UPPER + (idx - 1));
-    if (name[0] == 'q' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_Q_1 + (idx - 1));
-    if (name[0] == 'Q' && parseIndex(name, 1, idx)) return static_cast<uint16_t>(MATHOP_EXT_Q_1_UPPER + (idx - 1));
 
     return 0;
 }
@@ -299,7 +237,7 @@ int32_t MathState::CompilePrimary(int32_t pos) {
             }
         }
 
-        uint16_t variable = LookupMathVariable(name);
+        uint8_t variable = LookupMathVariable(name);
 
         if (variable) {
             this->m_ops[this->m_numOps] = variable;
@@ -533,102 +471,10 @@ void MathState::ExecuteOperator(uint32_t op, MathStack* stack) {
 }
 
 // VERIFY: ef1f3713 manual
-void MathState::GetVariableValue(uint32_t op, MathStack* stack, const SpellRec* spell, int32_t spellLevel, int32_t scale, int32_t parseUnit, int32_t parsePet, int32_t noModifiers, bool isProjected) {
+// OFFSET: 0x005782D0
+void MathState::GetVariableValue(uint32_t op, MathStack* stack, const SpellRec* spell, int32_t spellLevel, int32_t scale, int32_t parseUnit, int32_t parsePet, int32_t noModifiers) {
     float value = 0.0f;
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
-
-    // Check if a stock effect variable references an effect cached in SpellEffectCacheDB
-    if (!isProjected && spell) {
-        uint32_t effectIdx = 0;
-        uint16_t nativeSlotOne = 0;
-        bool isEffectOp = false;
-
-        struct StockEffectRange { uint16_t first; uint16_t count; uint16_t nativeSlotOne; };
-        static const StockEffectRange stockRanges[] = {
-            { MATHOP_MIN_POINTS_1, 3, MATHOP_MIN_POINTS_1 },
-            { MATHOP_MAX_POINTS_1, 3, MATHOP_MAX_POINTS_1 },
-            { MATHOP_RADIUS_1, 3, MATHOP_RADIUS_1 },
-            { MATHOP_RADIUS_1_UPPER, 3, MATHOP_RADIUS_1_UPPER },
-            { MATHOP_CHAIN_TARGETS_1, 3, MATHOP_CHAIN_TARGETS_1 },
-            { MATHOP_CHAIN_TARGETS_1_UPPER, 3, MATHOP_CHAIN_TARGETS_1_UPPER },
-            { MATHOP_AURA_PERIOD_1, 3, MATHOP_AURA_PERIOD_1 },
-            { MATHOP_AURA_PERIOD_1_UPPER, 3, MATHOP_AURA_PERIOD_1_UPPER },
-            { MATHOP_POINTS_PER_COMBO_1, 3, MATHOP_POINTS_PER_COMBO_1 },
-            { MATHOP_POINTS_PER_COMBO_1_UPPER, 3, MATHOP_POINTS_PER_COMBO_1_UPPER },
-            { MATHOP_AMPLITUDE_1, 3, MATHOP_AMPLITUDE_1 },
-            { MATHOP_AMPLITUDE_1_UPPER, 3, MATHOP_AMPLITUDE_1_UPPER },
-            { MATHOP_CHAIN_AMPLITUDE_1, 3, MATHOP_CHAIN_AMPLITUDE_1 },
-            { MATHOP_CHAIN_AMPLITUDE_1_UPPER, 3, MATHOP_CHAIN_AMPLITUDE_1_UPPER },
-            { MATHOP_MISC_VALUE_1, 3, MATHOP_MISC_VALUE_1 },
-            { MATHOP_MISC_VALUE_1_UPPER, 3, MATHOP_MISC_VALUE_1_UPPER },
-            { MATHOP_BONUS_COEFFICIENT_1, 3, MATHOP_BONUS_COEFFICIENT_1 },
-            { MATHOP_BONUS_COEFFICIENT_1_UPPER, 3, MATHOP_BONUS_COEFFICIENT_1_UPPER }
-        };
-
-        for (const auto& r : stockRanges) {
-            if (op >= r.first && op < r.first + r.count) {
-                effectIdx = op - r.first;
-                nativeSlotOne = r.nativeSlotOne;
-                isEffectOp = true;
-                break;
-            }
-        }
-
-        if (isEffectOp) {
-            SpellEffectCacheRow* customEffect = SpellEffectCacheDB::Get(SpellEffectCacheKey(spell->m_id, effectIdx));
-            if (customEffect) {
-                SpellRec projected;
-                Duskhaven::Tooltip::ProjectEffectIntoFirstSlot(spell, *customEffect, projected);
-                this->GetVariableValue(nativeSlotOne, stack, &projected, spellLevel, scale, parseUnit, parsePet, noModifiers, true);
-                return;
-            }
-        }
-    }
-
-    // Duskhaven dynamic effect variables (indices 1..32 for m, M, a, A, x, X, t, T, b, B, e, E, f, F, q, Q, bc, BC)
-    if (op >= MATHOP_EXT_M_1 && op <= MATHOP_EXT_BC_32_UPPER) {
-        uint32_t offset = op - MATHOP_EXT_M_1;
-        uint32_t group = offset / 32;
-        uint32_t effectIdx = offset % 32;
-
-        static const uint16_t nativeSlotOneVariables[18] = {
-            MATHOP_MIN_POINTS_1,
-            MATHOP_MAX_POINTS_1,
-            MATHOP_RADIUS_1,
-            MATHOP_RADIUS_1_UPPER,
-            MATHOP_CHAIN_TARGETS_1,
-            MATHOP_CHAIN_TARGETS_1_UPPER,
-            MATHOP_AURA_PERIOD_1,
-            MATHOP_AURA_PERIOD_1_UPPER,
-            MATHOP_POINTS_PER_COMBO_1,
-            MATHOP_POINTS_PER_COMBO_1_UPPER,
-            MATHOP_AMPLITUDE_1,
-            MATHOP_AMPLITUDE_1_UPPER,
-            MATHOP_CHAIN_AMPLITUDE_1,
-            MATHOP_CHAIN_AMPLITUDE_1_UPPER,
-            MATHOP_MISC_VALUE_1,
-            MATHOP_MISC_VALUE_1_UPPER,
-            MATHOP_BONUS_COEFFICIENT_1,
-            MATHOP_BONUS_COEFFICIENT_1_UPPER
-        };
-
-        uint16_t nativeSlotOne = nativeSlotOneVariables[group];
-
-        SpellEffectCacheRow* customEffect = (spell && !isProjected) ? SpellEffectCacheDB::Get(SpellEffectCacheKey(spell->m_id, effectIdx)) : nullptr;
-        if (customEffect) {
-            SpellRec projected;
-            Duskhaven::Tooltip::ProjectEffectIntoFirstSlot(spell, *customEffect, projected);
-            this->GetVariableValue(nativeSlotOne, stack, &projected, spellLevel, scale, parseUnit, parsePet, noModifiers, true);
-            return;
-        } else if (effectIdx < 3) {
-            this->GetVariableValue(nativeSlotOne + effectIdx, stack, spell, spellLevel, scale, parseUnit, parsePet, noModifiers, isProjected);
-            return;
-        } else {
-            stack->m_top--;
-            stack->m_values[stack->m_top] = 0.0f;
-            return;
-        }
-    }
 
     if (player) {
         switch (op) {
@@ -1055,69 +901,9 @@ void MathState::GetVariableValue(uint32_t op, MathStack* stack, const SpellRec* 
                 break;
             }
 
-            case MATHOP_EXT_HP:
-                value = static_cast<float>(player->m_unit->m_unitFieldHealth);
-                break;
-
-            case MATHOP_EXT_HP_UPPER:
-                value = static_cast<float>(player->m_unit->m_unitFieldMaxhealth);
-                break;
-
-            case MATHOP_EXT_MASTERY_1:
-            case MATHOP_EXT_MASTERY_2:
-            case MATHOP_EXT_MASTERY_3:
-            case MATHOP_EXT_MASTERY_4:
-                value = Duskhaven::Character::GetMasteryForSpec(op - MATHOP_EXT_MASTERY_1);
-                break;
-
-            case MATHOP_EXT_MASTERY:
-                value = Duskhaven::Character::GetMasteryRatingSpec(Duskhaven::Character::SpecToIndex(Duskhaven::Character::GetCharActiveSpec()));
-                break;
-
-            case MATHOP_EXT_DPCT:
-                value = player->m_player->m_playerDodgePercentage;
-                break;
-
-            case MATHOP_EXT_PPCT:
-                value = player->m_player->m_playerParryPercentage;
-                break;
-
             default:
-                if (op >= MATHOP_EXT_PPL_1 && op <= MATHOP_EXT_PPL_32) {
-                    uint32_t effectIdx = op - MATHOP_EXT_PPL_1;
-                    SpellEffectCacheRow* customEffect = spell ? SpellEffectCacheDB::Get(SpellEffectCacheKey(spell->m_id, effectIdx)) : nullptr;
-                    if (customEffect) {
-                        value = customEffect->effectRealPointsPerLevel;
-                    } else if (effectIdx < 3 && spell) {
-                        value = spell->m_effectRealPointsPerLevel[effectIdx];
-                    } else {
-                        this->m_status = 1;
-                        value = 0.0f;
-                    }
-                } else if (op >= MATHOP_EXT_PPL_1_UPPER && op <= MATHOP_EXT_PPL_32_UPPER) {
-                    uint32_t effectIdx = op - MATHOP_EXT_PPL_1_UPPER;
-                    SpellEffectCacheRow* customEffect = spell ? SpellEffectCacheDB::Get(SpellEffectCacheKey(spell->m_id, effectIdx)) : nullptr;
-                    if (customEffect) {
-                        value = customEffect->effectRealPointsPerLevel * static_cast<float>(player->m_unit->m_unitFieldLevel);
-                    } else if (effectIdx < 3 && spell) {
-                        value = spell->m_effectRealPointsPerLevel[effectIdx] * static_cast<float>(player->m_unit->m_unitFieldLevel);
-                    } else {
-                        this->m_status = 1;
-                        value = 0.0f;
-                    }
-                } else if (op >= MATHOP_EXT_POWER_1 && op <= MATHOP_EXT_POWER_7) {
-                    uint32_t powerIdx = op - MATHOP_EXT_POWER_1;
-                    value = static_cast<float>(player->m_unit->m_unitFieldPower[powerIdx]);
-                } else if (op >= MATHOP_EXT_POWER_1_UPPER && op <= MATHOP_EXT_POWER_7_UPPER) {
-                    uint32_t powerIdx = op - MATHOP_EXT_POWER_1_UPPER;
-                    value = static_cast<float>(player->m_unit->m_unitFieldMaxpower[powerIdx]);
-                } else if (op >= MATHOP_EXT_BON_1 && op <= MATHOP_EXT_BON_32) {
-                    uint32_t effectIdx = op - MATHOP_EXT_BON_1;
-                    value = Duskhaven::Tooltip::GetEffectBonusValue(player, spell, effectIdx, spellLevel, parsePet, parseUnit, noModifiers);
-                } else {
-                    value = 0.0f;
-                    this->m_status = 1;
-                }
+                value = 0.0f;
+                this->m_status = 1;
                 break;
         }
     }
@@ -1138,7 +924,7 @@ float MathState::Evaluate(const SpellRec* spell, int32_t spellLevel, int32_t sca
     const int32_t* intArg = this->m_intArgs;
 
     for (uint32_t i = 0; i < this->m_numOps; i++) {
-        uint16_t op = this->m_ops[i];
+        uint8_t op = this->m_ops[i];
 
         if (op == MATHOP_SPELL) {
             if (!g_spellDB.GetRecord(QuestTextParser::Spell_C_SpellGetSpellIDForDifficulty(*intArg++), &loaded)) {

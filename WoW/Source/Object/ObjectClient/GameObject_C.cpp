@@ -86,7 +86,6 @@
 #include "WoW/Source/WorldClient/MapEntity.h"
 #include "WoW/Source/WorldClient/World.h"
 #include "WoW/Source/WowSvcs/WowSvcsClient/ClientServices.h"
-#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 
 // STATIC: 0x00A335E8
 static const uint32_t s_oneShotAnims[7] = { 0xFFFFFFFF, 0, 8, 9, 10, 11, 12 };
@@ -2808,12 +2807,6 @@ bool CGGameObject_C::IsValidTargetForSpell(const WOWGUID& item, int32_t spellId)
         }
     }
 
-    uint32_t resolved = 0, index = 0;
-    int32_t cap = 0, required = 0;
-    if (LocalSpellData::ResolveExtraOpenLock(this, static_cast<uint32_t>(spellId), resolved, cap, required, index)) {
-        return true;
-    }
-
     return false;
 }
 
@@ -3791,29 +3784,6 @@ bool CGGameObject_C::IsLocked(int32_t* spellId, int32_t* skillValue, int32_t* re
 
                 return false;
             }
-        }
-    }
-
-    if (locked) {
-        uint32_t extraSpellId = 0, extraIndex = 0;
-        int32_t extraCap = 0, extraRequired = 0;
-        if (LocalSpellData::ResolveExtraOpenLock(this, 0, extraSpellId, extraCap, extraRequired, extraIndex)) {
-            if (spellId) {
-                *spellId = static_cast<int32_t>(extraSpellId);
-            }
-            if (skillValue) {
-                *skillValue = extraCap;
-            }
-            if (requiredSkill) {
-                *requiredSkill = extraRequired;
-            }
-            if (key) {
-                *key = nullptr;
-            }
-            if (entry) {
-                *entry = extraIndex;
-            }
-            return extraCap < extraRequired;
         }
     }
 

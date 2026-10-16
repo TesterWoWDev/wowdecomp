@@ -12,5 +12,4 @@ target_include_directories(Gxu
 target_link_libraries(Gxu
     PUBLIC
         freetype
-        msdfgen
 )

@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "Client.h"
-#include "WoW/Source/Duskhaven/Duskhaven.h"
+#include "WoW/Source/ModCore/ModCore.h"
 #include "Engine/Source/Base/Base.h"
 #include "Engine/Source/Base/CmdLine.h"
 #include "Engine/Source/BlizzardCore/OggDecompress.h"
@@ -508,7 +508,7 @@ void ZoneDebugDestroy() {
 // VERIFY: a6d33d4d auto
 // OFFSET: 0x00402910
 static void WowClientDestroy() {
-    Duskhaven::Shutdown();
+    ModCore::ModManager::Get().Shutdown();
     ValidateNameDestroy();
     DeclinedWordsDestroy();
     SpellVisualsShutdown();
@@ -1037,7 +1037,7 @@ static void InitializeClient() {
     GxuLightInitialize();
     GxuLightSetGridSize(16.665001f);
     InputControlInitialize();
-    Duskhaven::Initialize();
+    ModCore::ModManager::Get().Initialize();
     CGlueMgr::Initialize();
 
     if (GetConsoleMessage()) {
@@ -1310,7 +1310,7 @@ void ClientInitializeGame(uint32_t mapId, C3Vector position) {
     MovementInit();
     EventRegister(EVENT_ID_IDLE, ClientIdle);
     ClientInitializeGameTime();
-    Duskhaven::OnGameInitialize(mapId, position);
+    ModCore::ModManager::Get().DispatchHook("OnGameInitialize");
 
     CommandManager* manager = StaticSingleton<CommandManager>::Instance();
     manager->m_connection = ClientServices::Connection();
@@ -1602,7 +1602,7 @@ void ClientDestroyGame(int32_t charSelect, int32_t resumeGlue, int32_t worldLogi
     PlayerNameShutdown();
     WorldTextShutdown();
     CGGameUI::ShutdownGame();
-    Duskhaven::OnGameDestroy();
+    ModCore::ModManager::Get().DispatchHook("OnGameDestroy");
     ClientDestroyGameTime();
     SI2::ShutdownZoneSoundsHandler();
     SI2::StopAllSounds();

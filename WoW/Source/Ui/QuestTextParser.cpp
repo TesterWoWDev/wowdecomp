@@ -23,9 +23,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <string>
-#include "WoW/Source/Duskhaven/DBC/Defs/SpellEffect.h"
-#include "WoW/Source/Duskhaven/Tooltip/SpellTooltipExtensions.h"
 #include "WoW/Source/Ui/ChatFrame.h"
 #include "WoW/Source/DB/Rec/AchievementRec.h"
 #include "WoW/Source/Game/GameClient/NameCache.h"
@@ -692,16 +689,6 @@ static int32_t SpellParserReplaceText(const SpellRec* spell, char* buffer, uint3
         }
     }
 
-    SpellRec customProjected;
-    if (spell) {
-        SpellEffectCacheRow* customEffect = SpellEffectCacheDB::Get(SpellEffectCacheKey(spell->m_id, index));
-        if (customEffect) {
-            Duskhaven::Tooltip::ProjectEffectIntoFirstSlot(spell, *customEffect, customProjected);
-            spell = &customProjected;
-            index = 0;
-        }
-    }
-
     char number[32];
     char duration[64];
     const char* output;
@@ -1129,25 +1116,8 @@ int32_t SpellParserParseText(const SpellRec* spell, char* buffer, uint32_t size,
         description = spell->m_description;
     }
 
-    std::string ownedDesc;
-    if (description && Duskhaven::Tooltip::OwnedTooltipDescriptionHasValueMacro(description)) {
-        char ownedBuffer[4096];
-        if (Duskhaven::Tooltip::ParseOwnedSpellTooltipText(spell, description, ownedBuffer, sizeof(ownedBuffer), useAuraDescription ? (std::max)(1, scale) : 0)) {
-            if (!SStrChr(ownedBuffer, '$')) {
-                SStrCopy(buffer, ownedBuffer, size);
-                s_spellVariables.m_count = 0;
-                return 1;
-            }
-            ownedDesc = ownedBuffer;
-            description = ownedDesc.c_str();
-        }
-    }
-
-    std::string expandedDesc = Duskhaven::Tooltip::ExpandTooltipText(spell, description);
-    const char* descToParse = expandedDesc.c_str();
-
-    const char* cursor = SStrChr(descToParse, '$');
-    int32_t result = SpellParserParseSubText(spell, buffer, size, parsePet, parseUnit, spellLevel, scale, noModifiers, descToParse, &cursor);
+    const char* cursor = SStrChr(description, '$');
+    int32_t result = SpellParserParseSubText(spell, buffer, size, parsePet, parseUnit, spellLevel, scale, noModifiers, description, &cursor);
     s_spellVariables.m_count = 0;
     return result;
 }

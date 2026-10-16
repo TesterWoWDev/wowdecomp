@@ -38,8 +38,7 @@
 #include "WoW/Source/Console/ConsoleClient.h"
 #include "WoW/Source/ConsoleDevice/ConsoleDevice.h"
 #include "WoW/Source/DB/DBClient/DBCacheInstances.h"
-#include "WoW/Source/Duskhaven/Lua/UIFunctions.h"
-#include "WoW/Source/Duskhaven/Duskhaven.h"
+#include "WoW/Source/ModCore/ModCore.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
 #include "WoW/Source/DB/Rec/AreaTableRec.h"
 #include "WoW/Source/DB/Rec/CharTitlesRec.h"
@@ -3131,16 +3130,6 @@ static int32_t Script_SetPortraitToTexture(lua_State* L) {
 
     if (!texture) {
         luaL_error(L, "SetPortraitToTexture(): Couldn't find texture named '%s'", lua_tolstring(L, 1, nullptr));
-    }
-
-    if (lua_isstring(L, 3)) {
-        const char* mask = lua_tolstring(L, 3, nullptr);
-        if (mask && mask[0] && lua_isstring(L, 2)) {
-            const char* source = lua_tolstring(L, 2, nullptr);
-            if (Duskhaven::Lua::ApplyMaskedTexture(texture, source, mask)) {
-                return 0;
-            }
-        }
     }
 
     if (lua_isstring(L, 2)) {
@@ -6577,7 +6566,7 @@ void LoadScriptFunctions() {
     EquipmentManagerRegisterScriptFunctions();
     GMTicketInfoRegisterScriptFunctions();
     BattlenetUI_RegisterScriptFunctions();
-    Duskhaven::RegisterScriptFunctions();
+    ModCore::ModManager::Get().RegisterLuaBindings(nullptr);
 }
 
 // VERIFY: ce499890 manual

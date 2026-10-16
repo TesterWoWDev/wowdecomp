@@ -19,7 +19,6 @@
 #include "WoW/Source/Ui/GameUI.h"
 #include "WoW/Source/DB/DBClient/DBCacheInstances.h"
 #include "WoW/Common/ComponentCore/CharacterComponent.h"
-#include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/WorldClient/FrameTime.h"
 #include "Engine/Source/Tempest/C44Matrix.h"
 #include "Engine/Source/Tempest/CMath.h"
@@ -560,22 +559,6 @@ void CEffect::AddSpecialEffect(int32_t type, const WOWGUID& target, void (*callb
 
     if (!unit || static_cast<uint32_t>(type) >= 12) {
         return;
-    }
-
-    if (type == 6) {
-        uint32_t auraCount = unit->GetAuraCount();
-        for (uint32_t i = 0; i < auraCount; ++i) {
-            AuraData* aura = unit->GetAura(i);
-            if (!aura) continue;
-            SpellRec spellRec;
-            if (g_spellDB.GetRecord(aura->m_spellId, &spellRec)) {
-                for (int32_t e = 0; e < 3; ++e) {
-                    if (spellRec.m_effectAura[e] == 312) { // SPELL_AURA_COMBAT_MOUNT_ILLUSION
-                        return;
-                    }
-                }
-            }
-        }
     }
 
     int32_t attachment = s_specialUnitEffectAttachments[type];
@@ -1581,7 +1564,6 @@ void CEffect::ApplyItemVisual() {
         CCharacterComponent* component = unit->m_characterComponent;
 
         if (component) {
-            Duskhaven::VisibleItemOverrides::ScopedContext context(this->m_sourceGuid.m_guid);
             component->RemoveItem(static_cast<ITEM_SLOT>(this->m_itemSlot));
             component->AddItem(static_cast<ITEM_SLOT>(this->m_itemSlot), &rec, 0);
             CGGameUI::UnitModelUpdate(this->m_sourceGuid, 3);

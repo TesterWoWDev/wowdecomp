@@ -83,6 +83,6 @@ target_link_libraries(WowClient
         LiquidSystem
         WowServices
         WowSvcs
-        Duskhaven
+        ModCore
         dbghelp
 )

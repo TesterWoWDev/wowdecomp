@@ -9,7 +9,6 @@
 #include "Engine/Source/Base/RCString.h"
 #include "Engine/Source/ConsoleBase/ConsoleCommand.h"
 #include "Engine/Source/ConsoleBase/ConsoleVar.h"
-#include "WoW/Source/Duskhaven/CVars/DuskhavenCVars.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
 #include "Engine/Source/Gx/CGxMatrixStack.h"
 #include "Engine/Source/Gx/CGxVertexPC.h"
@@ -4498,9 +4497,6 @@ uint32_t World::TriDataToFacetData(void* unused, FacetData* facets, WOWGUID guid
 // VERIFY: a052c929 auto
 // OFFSET: 0x0077F330
 bool World::GetFacets(CFrustum* frustum, FacetData* facets, uint32_t flags, uint32_t* status) {
-    if (Duskhaven::CVars::g_modelFadeAlpha < 1.0f) {
-        flags &= ~1u;
-    }
     return CMap::QueryFacets(frustum, facets, flags, status);
 }
 
