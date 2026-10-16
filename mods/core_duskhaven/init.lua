@@ -18,6 +18,21 @@ function DuskhavenCore.Init(modContext)
         ModCore.LogWarn("Could not load spells.local_spells: %s", tostring(spells))
     end
 
+    local okPackets, packets = pcall(require, "packets.custom_opcodes")
+    if not okPackets then
+        ModCore.LogWarn("Could not load packets.custom_opcodes: %s", tostring(packets))
+    end
+
+    local okHousing, housing = pcall(require, "housing.placement")
+    if not okHousing then
+        ModCore.LogWarn("Could not load housing.placement: %s", tostring(housing))
+    end
+
+    local okTooltip, tooltip = pcall(require, "tooltips.evaluator")
+    if not okTooltip then
+        ModCore.LogWarn("Could not load tooltips.evaluator: %s", tostring(tooltip))
+    end
+
     ModCore.Hooks.Register("OnWorldUpdate", function(dt)
         -- Hook point for visual pumps, combat animations, danger zone ticks
     end, 100)
