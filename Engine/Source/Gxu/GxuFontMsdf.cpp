@@ -6,6 +6,7 @@
 
 #include "Engine/Source/Gxu/GxuFontMsdf.h"
 #include "Engine/Source/Gxu/GxuFontPlugin.h"
+#include "Engine/Source/Gxu/GxuFont.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
 #include "Engine/Source/Gx/CGxDevice/CGxShader.h"
 #include "Engine/Source/Storm/H/storm.h"
@@ -98,7 +99,10 @@ float MsdfComputeScreenPxRange(uint32_t renderedPixelSize) {
 }
 
 bool MsdfGenerateGlyph(FT_Face face, uint32_t pixelSize, uint32_t code, uint32_t baseline, GLYPHBITMAPDATA* dataPtr, uint32_t padding) {
-    if (s_fontBackend && g_msdfEnabled) {
+    if (!g_fontMsdfPixelShader) {
+        g_fontMsdfPixelShader = GxuFontCreateMsdfPixelShader();
+    }
+    if (s_fontBackend && g_msdfEnabled && g_fontMsdfPixelShader && g_fontMsdfPixelShader->Valid()) {
         return s_fontBackend->GenerateGlyph(face, pixelSize, code, baseline, dataPtr, padding);
     }
     return false;
@@ -182,6 +186,11 @@ CGxShader* GxuFontCreateMsdfPixelShader() {
 
     shader->m_loaded = 0;
     shader->m_valid = 0;
+
+    if (!shader->Valid()) {
+        g_msdfEnabled = 0;
+        return nullptr;
+    }
 
     return shader;
 }

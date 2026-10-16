@@ -952,13 +952,12 @@ void GxuFontWindowSizeChanged() {
 void GxuFontInitialize() {
     g_theGxDevicePtr->ShaderCreate(g_fontVertexShader, GxSh_Vertex, "Shaders\\Vertex", "UI", 2);
     g_theGxDevicePtr->ShaderCreate(&g_fontPixelShader, GxSh_Pixel, "Shaders\\Pixel", "UI", 1);
-    g_fontMsdfPixelShader = GxuFontCreateMsdfPixelShader();
-
     BATCHEDRENDERFONTDESC::Initialize();
 
     FT_New_Library(&s_GxuMemoryRecord, &g_FTLibrary);
     FT_Add_Default_Modules(g_FTLibrary);
     MsdfInitialize();
+    g_fontMsdfPixelShader = GxuFontCreateMsdfPixelShader();
 
     GxuFontWindowSizeChanged();
     InitializeFrameGraph();
