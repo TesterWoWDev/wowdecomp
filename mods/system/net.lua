@@ -2,6 +2,11 @@
 -- wowdecomp Declarative Network & Packet RPC Engine
 -- ==============================================================================
 
+-- Ensure compatibility alias for GlueXML / legacy addons
+if CreateCustomPacket and not CreateCustompacket then
+    CreateCustompacket = CreateCustomPacket
+end
+
 local Net = {}
 local packetDefs = {}
 local opcodeMap = {}

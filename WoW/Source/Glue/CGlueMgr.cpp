@@ -714,6 +714,7 @@ void CGlueMgr::Resume() {
     SI2::RegisterScriptFunctions();
     AccountMsg_RegisterScriptFunctions();
     CGVideoOptions::RegisterScriptFunctions();
+    ModCore::ModManager::Get().RegisterLuaBindings(nullptr);
     ModCore::ModManager::Get().OnGlueResume();
     CGlueMgr::s_scriptFunctionsLoaded = 1;
     FrameScript_CreateEvents(g_glueScriptEvents, sizeof(g_glueScriptEvents) / sizeof(g_glueScriptEvents[0]));

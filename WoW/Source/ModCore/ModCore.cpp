@@ -2,9 +2,11 @@
 #include "BytecodeCache.h"
 #include "AutoExport.h"
 #include "FileWatcher.h"
+#include "CustomPacket.h"
 
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "Engine/Source/lua-5.1/src/lauxlib.h"
+#include "Engine/Source/lua-5.1/src/lualib.h"
 #include "Engine/Source/FrameScript/FrameScript.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -27,6 +29,24 @@ namespace ModCore
 
             std::cout << "[LUA " << (level ? level : "INFO") << "] " << msg << std::endl;
             return 0;
+        }
+
+        int Script_LoadFile(lua_State* L)
+        {
+            const char* filename = luaL_checkstring(L, 1);
+            if (!filename)
+            {
+                lua_pushnil(L);
+                lua_pushstring(L, "loadfile: invalid filename");
+                return 2;
+            }
+            if (BytecodeCache::Get().LoadScript(L, filename, filename))
+            {
+                return 1;
+            }
+            lua_pushnil(L);
+            lua_pushstring(L, "loadfile: failed to load script");
+            return 2;
         }
 
         std::string ReadSmallFile(const std::filesystem::path& path)
@@ -141,8 +161,26 @@ namespace ModCore
         m_L = L;
         std::cout << "[ModCore] Registering Lua bindings and executing bootstrap..." << std::endl;
 
+        // Open standard package library in Lua state if not yet loaded
+        lua_getglobal(m_L, "package");
+        if (lua_isnil(m_L, -1))
+        {
+            lua_pop(m_L, 1);
+            luaopen_package(m_L);
+        }
+        else
+        {
+            lua_pop(m_L, 1);
+        }
+
+        // Register loadfile helper via BytecodeCache
+        FrameScript_RegisterFunction("loadfile", Script_LoadFile);
+
         // Register internal logging helper
         FrameScript_RegisterFunction("_MODCORE_LOG", Script_ModCoreLog);
+
+        // Register custom packet primitives and embedded scripts
+        CustomPacketManager::Get().RegisterLuaBindings(m_L);
 
         // Set BasePath in global table
         std::string setBasePathLua = "ModCore = ModCore or {}; ModCore.BasePath = [[" + m_modsPath.generic_string() + "/]];";
@@ -316,6 +354,12 @@ namespace ModCore
 
     bool ModManager::OnPacketReceived(uint32_t opcode, uint32_t time, void* dataStore)
     {
+        // 1. Intercept custom network packets (0x102 / 0x7A00)
+        if (CustomPacketManager::Get().HandlePacket(opcode, time, dataStore))
+        {
+            return true;
+        }
+
         if (!m_L) return false;
 
         bool handled = false;

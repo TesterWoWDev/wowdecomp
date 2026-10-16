@@ -34,6 +34,9 @@ package.path = basePath .. "?.lua;" ..
 -- Load Event & Hook Bus
 ModCore.Hooks = require("system.hooks")
 
+-- Load Declarative Network Engine
+ModCore.Net = require("system.net")
+
 -- Load Auto-Export Engine (used for AI schema & EmmyLua generator)
 ModCore.ApiExport = require("system.api_export")
 

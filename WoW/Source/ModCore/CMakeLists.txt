@@ -14,4 +14,6 @@ target_link_libraries(ModCore
     PUBLIC
         lua
         Storm
+        Base
+        WowSvcs
 )
