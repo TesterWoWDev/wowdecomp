@@ -1,0 +1,12 @@
+{
+  "devMode": true,
+  "cacheEnabled": true,
+  "aiExportOnBoot": true,
+  "hotReload": true,
+  "logLevel": "DEBUG",
+  "searchPaths": [
+    "mods/system",
+    "mods/core_duskhaven",
+    "mods/user_mods"
+  ]
+}

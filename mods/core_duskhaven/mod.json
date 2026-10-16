@@ -1,0 +1,9 @@
+{
+  "id": "duskhaven-core",
+  "name": "Duskhaven Core Gameplay Extensions",
+  "version": "1.0.0",
+  "author": "Duskhaven Development Team",
+  "description": "Decoupled gameplay logic, custom spell attributes, danger zones, weapon trails, and housing.",
+  "entryPoint": "init.lua",
+  "priority": 100
+}

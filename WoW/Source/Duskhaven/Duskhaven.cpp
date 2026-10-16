@@ -26,6 +26,7 @@
 #include "WoW/Source/Duskhaven/Highlight/Highlight.h"
 #include "WoW/Source/Duskhaven/Editor/EditorRuntime.h"
 #include "WoW/Source/Duskhaven/Streaming/ContentStreaming.h"
+#include "WoW/Source/Duskhaven/ModCore/ModCore.h"
 #include "WoW/Source/Ui/GameUI.h"
 #include "Engine/Source/Event/Types.h"
 
@@ -33,6 +34,9 @@ namespace Duskhaven
 {
     void Initialize()
     {
+        // 0. ModCore Framework Runtime
+        ModCore::ModManager::Get().Initialize();
+
         // 1. Config
         DHConfig::Initialize();
 
@@ -68,6 +72,7 @@ namespace Duskhaven
 
     void Shutdown()
     {
+        ModCore::ModManager::Get().Shutdown();
         Lifecycle::DispatchEngineShutdown();
     }
 
@@ -97,6 +102,7 @@ namespace Duskhaven
 
     void OnWorldUpdate()
     {
+        ModCore::ModManager::Get().OnWorldUpdate(1.0f / 60.0f);
         ContentStreaming::PumpMountQueue();
         LocalSpellData::PumpExtendedLanguageRefresh();
         DangerZoneVisuals::Pump();
@@ -106,6 +112,7 @@ namespace Duskhaven
 
     void OnWorldRender(CGWorldFrame* worldFrame)
     {
+        ModCore::ModManager::Get().OnWorldRender(worldFrame);
         WeaponTrailPlayback::OnWorldRender(worldFrame);
         Highlight::OnWorldRender();
         Editor::EditorRuntime::OnWorldRender(worldFrame);
@@ -162,6 +169,11 @@ namespace Duskhaven
 
     bool OnPacketReceived(uint32_t msgId, uint32_t time, CDataStore* msg)
     {
+        if (ModCore::ModManager::Get().OnPacketReceived(msgId, time, msg))
+        {
+            return true;
+        }
+
         if (msgId == Network::SERVER_TO_CLIENT_OPCODE || msgId == 0x7A00)
         {
             Network::HandleServerToClientPacket(nullptr, msgId, time, msg);
@@ -185,6 +197,8 @@ namespace Duskhaven
 
     void RegisterScriptFunctions()
     {
+        ModCore::ModManager::Get().RegisterLuaBindings(nullptr);
+
         DHConfig::RegisterLuaFunctions();
         Network::RegisterLuaFunctions();
         IPC::RegisterLuaFunctions();

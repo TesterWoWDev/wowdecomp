@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "wowdecomp Modding Framework API",
+  "version": "1.0.0",
+  "exportTimestamp": "2026-10-16T14:00:00Z",
+  "modules": {
+    "ModCore": {
+      "description": "Master modding framework runtime controller",
+      "methods": [
+        { "name": "LogDebug", "params": ["fmt", "..."], "doc": "Logs debug string to console" },
+        { "name": "LogInfo", "params": ["fmt", "..."], "doc": "Logs info string to console" },
+        { "name": "LogWarn", "params": ["fmt", "..."], "doc": "Logs warning string to console" },
+        { "name": "LogError", "params": ["fmt", "..."], "doc": "Logs error string to console" },
+        { "name": "MountMod", "params": ["modDir", "manifest"], "doc": "Mounts a mod directory" }
+      ]
+    },
+    "Hooks": {
+      "description": "Event and lifecycle dispatch bus",
+      "methods": [
+        { "name": "Register", "params": ["hookName", "callback", "priority", "doc"], "doc": "Registers a hook listener" },
+        { "name": "Unregister", "params": ["hookName", "callback"], "doc": "Unregisters a hook listener" },
+        { "name": "Fire", "params": ["hookName", "..."], "doc": "Fires a hook across all listeners" }
+      ]
+    },
+    "Net": {
+      "description": "Declarative binary network protocol and RPC engine",
+      "methods": [
+        { "name": "DefinePacket", "params": ["name", "def"], "doc": "Registers custom opcode schema" },
+        { "name": "Send", "params": ["name", "payload"], "doc": "Sends custom packet to server" },
+        { "name": "OnCustomPacket", "params": ["opcode", "handler"], "doc": "Registers raw opcode callback" }
+      ]
+    },
+    "Visuals": {
+      "description": "Client combat visuals, telegraphs, and trails",
+      "methods": [
+        { "name": "CreateDecal", "params": ["params"], "doc": "Creates boss telegraph decal" },
+        { "name": "AttachWeaponTrail", "params": ["unit", "hand", "params"], "doc": "Attaches melee weapon ribbon" }
+      ]
+    },
+    "DBC": {
+      "description": "Runtime virtual DBC tables and row injection",
+      "methods": [
+        { "name": "GetTable", "params": ["tableName"], "doc": "Returns mutable DBC table handle" }
+      ]
+    }
+  },
+  "hooks": {
+    "OnEngineInit": {
+      "description": "Fired when client engine completes low-level initialization",
+      "signature": "fun()"
+    },
+    "OnWorldRender": {
+      "description": "Fired each frame during the 3D world rendering pass (for gizmos, trails, decals)",
+      "signature": "fun(worldFrame: any)"
+    },
+    "OnWorldUpdate": {
+      "description": "Fired every game tick with delta time (for visual updates, danger zones)",
+      "signature": "fun(dt: number)"
+    },
+    "OnPacketReceived": {
+      "description": "Fired when a custom network packet arrives from the server",
+      "signature": "fun(opcode: integer, time: integer, reader: any): boolean?"
+    },
+    "OnSpellQuery": {
+      "description": "Fired when client queries spell power cost, range, cast time, or passive state",
+      "signature": "fun(queryType: string, spellId: integer, ...): any?"
+    }
+  }
+}
