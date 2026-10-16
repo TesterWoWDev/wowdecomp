@@ -49,6 +49,13 @@ namespace ModCore
             return 2;
         }
 
+        int Script_ExportApi(lua_State* L)
+        {
+            AutoExport::Get().ExportAll(L);
+            lua_pushboolean(L, 1);
+            return 1;
+        }
+
         std::string ReadSmallFile(const std::filesystem::path& path)
         {
             std::ifstream file(path);
@@ -168,6 +175,9 @@ namespace ModCore
         // Register internal logging helper
         FrameScript_RegisterFunction("_MODCORE_LOG", Script_ModCoreLog);
 
+        // Register API export helper
+        FrameScript_RegisterFunction("ModCore_ExportApi", Script_ExportApi);
+
         // Register custom packet primitives and embedded scripts
         CustomPacketManager::Get().RegisterLuaBindings(m_L);
 
@@ -283,14 +293,117 @@ namespace ModCore
         return false;
     }
 
-    void ModManager::OnEngineInit()
+    // =========================================================================
+    // Generic Hook Dispatcher
+    // =========================================================================
+
+    bool ModManager::DispatchHookEx(const char* hookName, 
+                                    std::function<int(lua_State*)> pushArgs, 
+                                    std::function<void(lua_State*, int)> readResult)
     {
         lua_State* L = FrameScript_GetContext();
-        if (!L) return;
+        if (!L || !hookName) return false;
         m_L = L;
         int top = lua_gettop(m_L);
-        FrameScript_Execute("if ModCore and ModCore.OnEngineInit then ModCore.OnEngineInit() end", "ModCore_OnEngineInit", nullptr);
+
+        bool handled = false;
+        lua_getglobal(m_L, "ModCore");
+        if (lua_istable(m_L, -1))
+        {
+            lua_getfield(m_L, -1, "DispatchHook");
+            if (lua_isfunction(m_L, -1))
+            {
+                lua_pushstring(m_L, hookName);
+                int argCount = 1;
+                if (pushArgs)
+                {
+                    argCount += pushArgs(m_L);
+                }
+
+                if (lua_pcall(m_L, argCount, 1, 0) == 0)
+                {
+                    handled = !lua_isnil(m_L, -1);
+                    if (readResult)
+                    {
+                        readResult(m_L, -1);
+                    }
+                    lua_pop(m_L, 1);
+                }
+                else
+                {
+                    const char* err = lua_tostring(m_L, -1);
+                    std::cerr << "[ModCore] Error running hook '" << hookName << "': " << (err ? err : "") << std::endl;
+                    lua_pop(m_L, 1);
+                }
+            }
+            else
+            {
+                lua_pop(m_L, 1); // pop non-function
+            }
+        }
+        lua_pop(m_L, 1); // pop ModCore
         lua_settop(m_L, top);
+        return handled;
+    }
+
+    bool ModManager::DispatchHook(const char* hookName)
+    {
+        return DispatchHookEx(hookName);
+    }
+
+    // =========================================================================
+    // Lifecycle Dispatches
+    // =========================================================================
+
+    void ModManager::OnEngineInit()
+    {
+        DispatchHook("OnEngineInit");
+    }
+
+    void ModManager::OnEngineShutdown()
+    {
+        DispatchHook("OnEngineShutdown");
+    }
+
+    void ModManager::OnGameInitialize()
+    {
+        DispatchHook("OnGameInitialize");
+    }
+
+    void ModManager::OnGameDestroy()
+    {
+        DispatchHook("OnGameDestroy");
+    }
+
+    void ModManager::OnFrameTick(float dt)
+    {
+        DispatchHookEx("OnFrameTick", [=](lua_State* L) {
+            lua_pushnumber(L, dt);
+            return 1;
+        });
+    }
+
+    // =========================================================================
+    // World / Map Dispatches
+    // =========================================================================
+
+    void ModManager::OnEnterWorld()
+    {
+        DispatchHook("OnEnterWorld");
+    }
+
+    void ModManager::OnLeaveWorld()
+    {
+        DispatchHook("OnLeaveWorld");
+    }
+
+    void ModManager::OnMapChange(const char* mapName, uint32_t zoneId)
+    {
+        DispatchHookEx("OnMapChange", [=](lua_State* L) {
+            lua_pushstring(L, mapName ? mapName : "");
+            lua_pushinteger(L, zoneId);
+            return 2;
+        });
     }
 
     void ModManager::OnWorldUpdate(float dt)
@@ -305,275 +418,62 @@ namespace ModCore
             }
         }
 
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return;
-        m_L = L;
-        int top = lua_gettop(m_L);
-
-        // Dispatch frame update to Lua
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnWorldUpdate");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushnumber(m_L, dt);
-                if (lua_pcall(m_L, 1, 0, 0) != 0)
-                {
-                    lua_pop(m_L, 1); // pop error
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
+        DispatchHookEx("OnWorldUpdate", [=](lua_State* L) {
+            lua_pushnumber(L, dt);
+            return 1;
+        });
     }
 
     void ModManager::OnWorldRender(void* worldFrame)
     {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return;
-        m_L = L;
-        int top = lua_gettop(m_L);
-
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnWorldRender");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushlightuserdata(m_L, worldFrame);
-                if (lua_pcall(m_L, 1, 0, 0) != 0)
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-    }
-
-    bool ModManager::OnPacketReceived(uint32_t opcode, uint32_t time, void* dataStore)
-    {
-        // 1. Intercept custom network packets (0x102 / 0x7A00)
-        if (CustomPacketManager::Get().HandlePacket(opcode, time, dataStore))
-        {
-            return true;
-        }
-
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return false;
-        m_L = L;
-        int top = lua_gettop(m_L);
-
-        bool handled = false;
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnPacketReceived");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushinteger(m_L, opcode);
-                lua_pushinteger(m_L, time);
-                lua_pushlightuserdata(m_L, dataStore);
-                if (lua_pcall(m_L, 3, 1, 0) == 0)
-                {
-                    if (lua_isboolean(m_L, -1))
-                    {
-                        handled = (lua_toboolean(m_L, -1) != 0);
-                    }
-                    lua_pop(m_L, 1);
-                }
-                else
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-        return handled;
-    }
-
-    bool ModManager::OnSpellQuery(const char* queryType, uint32_t spellId, int32_t* outResult)
-    {
-        lua_State* L = FrameScript_GetContext();
-        if (!L || !queryType) return false;
-        m_L = L;
-        int top = lua_gettop(m_L);
-
-        bool handled = false;
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnSpellQuery");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushstring(m_L, queryType);
-                lua_pushinteger(m_L, spellId);
-                if (lua_pcall(m_L, 2, 1, 0) == 0)
-                {
-                    if (lua_isnumber(m_L, -1))
-                    {
-                        if (outResult)
-                            *outResult = static_cast<int32_t>(lua_tointeger(m_L, -1));
-                        handled = true;
-                    }
-                    lua_pop(m_L, 1);
-                }
-                else
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-        return handled;
-    }
-
-    void ModManager::OnEngineShutdown()
-    {
-        DispatchHook("OnEngineShutdown");
+        DispatchHookEx("OnWorldRender", [=](lua_State* L) {
+            lua_pushlightuserdata(L, worldFrame);
+            return 1;
+        });
     }
 
     void ModManager::OnWorldHitTest(uint64_t guid, const void* point, bool hitObject)
     {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return;
-        m_L = L;
-        int top = lua_gettop(m_L);
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnWorldHitTest");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushnumber(m_L, static_cast<lua_Number>(guid));
-                lua_pushlightuserdata(m_L, const_cast<void*>(point));
-                lua_pushboolean(m_L, hitObject ? 1 : 0);
-                if (lua_pcall(m_L, 3, 0, 0) != 0)
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
+        DispatchHookEx("OnWorldHitTest", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(guid));
+            lua_pushlightuserdata(L, const_cast<void*>(point));
+            lua_pushboolean(L, hitObject ? 1 : 0);
+            return 3;
+        });
     }
 
     bool ModManager::OnTerrainTrack(const void* point)
     {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return false;
-        m_L = L;
-        int top = lua_gettop(m_L);
         bool consumed = false;
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnTerrainTrack");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushlightuserdata(m_L, const_cast<void*>(point));
-                if (lua_pcall(m_L, 1, 1, 0) == 0)
-                {
-                    if (lua_isboolean(m_L, -1))
-                        consumed = (lua_toboolean(m_L, -1) != 0);
-                    lua_pop(m_L, 1);
-                }
-                else
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
+        DispatchHookEx("OnTerrainTrack", [=](lua_State* L) {
+            lua_pushlightuserdata(L, const_cast<void*>(point));
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
         return consumed;
     }
 
-    void ModManager::OnSpellDestroy()
+    bool ModManager::OnTerrainClick(int32_t button, float x, float y, float z)
     {
-        DispatchHook("OnSpellDestroy");
+        bool consumed = false;
+        DispatchHookEx("OnTerrainClick", [=](lua_State* L) {
+            lua_pushinteger(L, button);
+            lua_pushnumber(L, x);
+            lua_pushnumber(L, y);
+            lua_pushnumber(L, z);
+            return 4;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
     }
 
-    void ModManager::OnChannelStart(void* msg)
-    {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return;
-        m_L = L;
-        int top = lua_gettop(m_L);
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnChannelStart");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushlightuserdata(m_L, msg);
-                if (lua_pcall(m_L, 1, 0, 0) != 0)
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-    }
-
-    void ModManager::OnChannelUpdate(void* msg)
-    {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return;
-        m_L = L;
-        int top = lua_gettop(m_L);
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "OnChannelUpdate");
-            if (lua_isfunction(m_L, -1))
-            {
-                lua_pushlightuserdata(m_L, msg);
-                if (lua_pcall(m_L, 1, 0, 0) != 0)
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-    }
+    // =========================================================================
+    // Glue / UI Dispatches
+    // =========================================================================
 
     void ModManager::OnGlueResume()
     {
@@ -585,79 +485,344 @@ namespace ModCore
         DispatchHook("OnGlueIdle");
     }
 
-    void ModManager::OnEnterWorld()
+    void ModManager::OnGlueScreenChange(const char* screenName)
     {
-        DispatchHook("OnEnterWorld");
-    }
-
-    void ModManager::OnLeaveWorld()
-    {
-        DispatchHook("OnLeaveWorld");
+        DispatchHookEx("OnGlueScreenChange", [=](lua_State* L) {
+            lua_pushstring(L, screenName ? screenName : "");
+            return 1;
+        });
     }
 
     bool ModManager::IsLoginBlocked()
     {
-        lua_State* L = FrameScript_GetContext();
-        if (!L) return false;
-        m_L = L;
-        int top = lua_gettop(m_L);
         bool blocked = false;
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
-        {
-            lua_getfield(m_L, -1, "IsLoginBlocked");
-            if (lua_isfunction(m_L, -1))
-            {
-                if (lua_pcall(m_L, 0, 1, 0) == 0)
-                {
-                    if (lua_isboolean(m_L, -1))
-                        blocked = (lua_toboolean(m_L, -1) != 0);
-                    lua_pop(m_L, 1);
-                }
-                else
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
-        }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
+        DispatchHookEx("IsLoginBlocked", nullptr, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                blocked = (lua_toboolean(L, idx) != 0);
+        });
         return blocked;
     }
 
-    bool ModManager::DispatchHook(const char* hookName)
+    void ModManager::OnCharacterSelect(int32_t charIndex)
     {
-        lua_State* L = FrameScript_GetContext();
-        if (!L || !hookName) return false;
-        m_L = L;
-        int top = lua_gettop(m_L);
-        bool success = false;
-        lua_getglobal(m_L, "ModCore");
-        if (lua_istable(m_L, -1))
+        DispatchHookEx("OnCharacterSelect", [=](lua_State* L) {
+            lua_pushinteger(L, charIndex);
+            return 1;
+        });
+    }
+
+    void ModManager::OnCharacterCreate(const char* name, uint8_t race, uint8_t classId, uint8_t gender)
+    {
+        DispatchHookEx("OnCharacterCreate", [=](lua_State* L) {
+            lua_pushstring(L, name ? name : "");
+            lua_pushinteger(L, race);
+            lua_pushinteger(L, classId);
+            lua_pushinteger(L, gender);
+            return 4;
+        });
+    }
+
+    // =========================================================================
+    // Network Dispatches
+    // =========================================================================
+
+    bool ModManager::OnPacketReceived(uint32_t opcode, uint32_t time, void* dataStore)
+    {
+        // 1. Intercept custom network packets (0x102 / 0x7A00)
+        if (CustomPacketManager::Get().HandlePacket(opcode, time, dataStore))
         {
-            lua_getfield(m_L, -1, hookName);
-            if (lua_isfunction(m_L, -1))
-            {
-                if (lua_pcall(m_L, 0, 0, 0) == 0)
-                {
-                    success = true;
-                }
-                else
-                {
-                    lua_pop(m_L, 1);
-                }
-            }
-            else
-            {
-                lua_pop(m_L, 1);
-            }
+            return true;
         }
-        lua_pop(m_L, 1);
-        lua_settop(m_L, top);
-        return success;
+
+        bool handled = false;
+        DispatchHookEx("OnPacketReceived", [=](lua_State* L) {
+            lua_pushinteger(L, opcode);
+            lua_pushinteger(L, time);
+            lua_pushlightuserdata(L, dataStore);
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                handled = (lua_toboolean(L, idx) != 0);
+        });
+        return handled;
+    }
+
+    bool ModManager::OnPacketSend(uint32_t opcode, uint32_t size, void* dataStore)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnPacketSend", [=](lua_State* L) {
+            lua_pushinteger(L, opcode);
+            lua_pushinteger(L, size);
+            lua_pushlightuserdata(L, dataStore);
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    void ModManager::OnDisconnect()
+    {
+        DispatchHook("OnDisconnect");
+    }
+
+    // =========================================================================
+    // Spell Dispatches
+    // =========================================================================
+
+    bool ModManager::OnSpellQuery(const char* queryType, uint32_t spellId, int32_t* outResult)
+    {
+        bool handled = false;
+        DispatchHookEx("OnSpellQuery", [=](lua_State* L) {
+            lua_pushstring(L, queryType);
+            lua_pushinteger(L, spellId);
+            return 2;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isnumber(L, idx))
+            {
+                if (outResult)
+                    *outResult = static_cast<int32_t>(lua_tointeger(L, idx));
+                handled = true;
+            }
+            else if (lua_isboolean(L, idx))
+            {
+                if (outResult)
+                    *outResult = lua_toboolean(L, idx);
+                handled = true;
+            }
+        });
+        return handled;
+    }
+
+    void ModManager::OnSpellCast(uint32_t spellId, uint64_t casterGuid, uint64_t targetGuid)
+    {
+        DispatchHookEx("OnSpellCast", [=](lua_State* L) {
+            lua_pushinteger(L, spellId);
+            lua_pushnumber(L, static_cast<lua_Number>(casterGuid));
+            lua_pushnumber(L, static_cast<lua_Number>(targetGuid));
+            return 3;
+        });
+    }
+
+    void ModManager::OnChannelStart(void* msg)
+    {
+        DispatchHookEx("OnChannelStart", [=](lua_State* L) {
+            lua_pushlightuserdata(L, msg);
+            return 1;
+        });
+    }
+
+    void ModManager::OnChannelUpdate(void* msg)
+    {
+        DispatchHookEx("OnChannelUpdate", [=](lua_State* L) {
+            lua_pushlightuserdata(L, msg);
+            return 1;
+        });
+    }
+
+    void ModManager::OnChannelStop()
+    {
+        DispatchHook("OnChannelStop");
+    }
+
+    void ModManager::OnSpellDestroy()
+    {
+        DispatchHook("OnSpellDestroy");
+    }
+
+    // =========================================================================
+    // Tooltip Dispatches
+    // =========================================================================
+
+    bool ModManager::OnTooltipEvaluate(uint32_t spellId, void* caster, const char* defaultText, std::string& outText)
+    {
+        bool overridden = false;
+        DispatchHookEx("OnTooltipEvaluate", [=](lua_State* L) {
+            lua_pushinteger(L, spellId);
+            lua_pushlightuserdata(L, caster);
+            lua_pushstring(L, defaultText ? defaultText : "");
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isstring(L, idx))
+            {
+                outText = lua_tostring(L, idx);
+                overridden = true;
+            }
+        });
+        return overridden;
+    }
+
+    void ModManager::OnTooltipSetSpell(void* tooltip, uint32_t spellId)
+    {
+        DispatchHookEx("OnTooltipSetSpell", [=](lua_State* L) {
+            lua_pushlightuserdata(L, tooltip);
+            lua_pushinteger(L, spellId);
+            return 2;
+        });
+    }
+
+    void ModManager::OnTooltipSetItem(void* tooltip, uint32_t itemId)
+    {
+        DispatchHookEx("OnTooltipSetItem", [=](lua_State* L) {
+            lua_pushlightuserdata(L, tooltip);
+            lua_pushinteger(L, itemId);
+            return 2;
+        });
+    }
+
+    void ModManager::OnTooltipSetUnit(void* tooltip, uint64_t unitGuid)
+    {
+        DispatchHookEx("OnTooltipSetUnit", [=](lua_State* L) {
+            lua_pushlightuserdata(L, tooltip);
+            lua_pushnumber(L, static_cast<lua_Number>(unitGuid));
+            return 2;
+        });
+    }
+
+    // =========================================================================
+    // ObjectMgr Dispatches
+    // =========================================================================
+
+    void ModManager::OnObjectCreate(uint64_t guid, uint32_t typeId, void* objectPtr)
+    {
+        DispatchHookEx("OnObjectCreate", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(guid));
+            lua_pushinteger(L, typeId);
+            lua_pushlightuserdata(L, objectPtr);
+            return 3;
+        });
+    }
+
+    void ModManager::OnObjectDestroy(uint64_t guid, uint32_t typeId, void* objectPtr)
+    {
+        DispatchHookEx("OnObjectDestroy", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(guid));
+            lua_pushinteger(L, typeId);
+            lua_pushlightuserdata(L, objectPtr);
+            return 3;
+        });
+    }
+
+    void ModManager::OnTargetChanged(uint64_t oldGuid, uint64_t newGuid)
+    {
+        DispatchHookEx("OnTargetChanged", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(oldGuid));
+            lua_pushnumber(L, static_cast<lua_Number>(newGuid));
+            return 2;
+        });
+    }
+
+    // =========================================================================
+    // Input Dispatches
+    // =========================================================================
+
+    bool ModManager::OnKeyDown(uint32_t key, uint32_t modifiers, const char* keyString)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnKeyDown", [=](lua_State* L) {
+            lua_pushinteger(L, key);
+            lua_pushinteger(L, modifiers);
+            lua_pushstring(L, keyString ? keyString : "");
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnKeyUp(uint32_t key, uint32_t modifiers, const char* keyString)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnKeyUp", [=](lua_State* L) {
+            lua_pushinteger(L, key);
+            lua_pushinteger(L, modifiers);
+            lua_pushstring(L, keyString ? keyString : "");
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnMouseDown(int32_t button, int32_t x, int32_t y)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnMouseDown", [=](lua_State* L) {
+            lua_pushinteger(L, button);
+            lua_pushinteger(L, x);
+            lua_pushinteger(L, y);
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnMouseUp(int32_t button, int32_t x, int32_t y)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnMouseUp", [=](lua_State* L) {
+            lua_pushinteger(L, button);
+            lua_pushinteger(L, x);
+            lua_pushinteger(L, y);
+            return 3;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnMouseWheel(int32_t delta)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnMouseWheel", [=](lua_State* L) {
+            lua_pushinteger(L, delta);
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Chat Dispatches
+    // =========================================================================
+
+    bool ModManager::OnChatMessage(int32_t type, const char* sender, const char* message, const char* channel)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnChatMessage", [=](lua_State* L) {
+            lua_pushinteger(L, type);
+            lua_pushstring(L, sender ? sender : "");
+            lua_pushstring(L, message ? message : "");
+            lua_pushstring(L, channel ? channel : "");
+            return 4;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnSendChatMessage(const char* message, int32_t type, int32_t language, const char* target)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnSendChatMessage", [=](lua_State* L) {
+            lua_pushstring(L, message ? message : "");
+            lua_pushinteger(L, type);
+            lua_pushinteger(L, language);
+            lua_pushstring(L, target ? target : "");
+            return 4;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
     }
 }

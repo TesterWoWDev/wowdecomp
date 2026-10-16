@@ -2854,6 +2854,7 @@ void CGGameUI::Target(WOWGUID guid) {
     CGGameUI::SendTarget(guid);
     CGSpellBook::UpdateUsable();
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_TARGET_CHANGED, nullptr);
+    ModCore::ModManager::Get().OnTargetChanged(CGGameUI::m_lastTarget.m_guid, guid.m_guid);
 
     if (g_stopAutoAttackOnTargetChangeCVar->m_intValue) {
         if (Spell_C_GetAutoRepeatingSpell()) {
@@ -2867,6 +2868,10 @@ void CGGameUI::Target(WOWGUID guid) {
 // VERIFY: fbb342ce manual
 // OFFSET: 0x00527360
 int32_t CGGameUI::OnTerrainClick(const CTerrainClickEvent& evt) {
+    if (ModCore::ModManager::Get().OnTerrainClick(evt.m_button, evt.m_point.x, evt.m_point.y, evt.m_point.z)) {
+        return 1;
+    }
+
     if (evt.m_button == MOUSE_BUTTON_LEFT) {
         if (Spell_C_HandleTerrainClick(evt)) {
             return 1;

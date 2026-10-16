@@ -1,4 +1,5 @@
 #include "CharacterCreation.h"
+#include "WoW/Source/ModCore/ModCore.h"
 #include <cstring>
 #include <vector>
 #include "Engine/Source/Event/Event.h"
@@ -350,6 +351,7 @@ void CCharacterCreation::CreateCharacter(const char* name) {
             CGlueMgr::CustomizeCharacter(guid, &info);
         }
     } else {
+        ModCore::ModManager::Get().OnCharacterCreate(info.m_name, info.m_raceID, info.m_classID, info.m_sexID);
         CGlueMgr::CreateCharacter(&info);
     }
 }

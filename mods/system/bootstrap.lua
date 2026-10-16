@@ -3,11 +3,12 @@
 -- ==============================================================================
 
 ModCore = ModCore or {}
-ModCore.Version = "1.0.0"
+ModCore.Version = "1.1.0"
 ModCore.LoadedMods = {}
 
 local function Log(level, fmt, ...)
-    local msg = string.format(fmt, ...)
+    local ok, msg = pcall(string.format, fmt, ...)
+    if not ok then msg = tostring(fmt) end
     if _MODCORE_LOG then
         _MODCORE_LOG(level, msg)
     else
@@ -20,7 +21,7 @@ ModCore.LogInfo  = function(...) Log("INFO", ...) end
 ModCore.LogWarn  = function(...) Log("WARN", ...) end
 ModCore.LogError = function(...) Log("ERROR", ...) end
 
-ModCore.LogInfo("Initializing wowdecomp Modding Framework v%s", ModCore.Version)
+ModCore.LogInfo("Initializing wowdecomp Universal Modding Framework v%s", ModCore.Version)
 
 -- Setup package table and safe require() for FrameScript
 local basePath = ModCore.BasePath or "mods/"
@@ -68,7 +69,69 @@ ModCore.Net = require("system.net")
 -- Load Auto-Export Engine (used for AI schema & EmmyLua generator)
 ModCore.ApiExport = require("system.api_export")
 
--- Function to mount an individual mod directory
+-- ==============================================================================
+-- Unified Hook Dispatch & Frontend Convenience APIs
+-- ==============================================================================
+
+-- Direct hook dispatch invoked by C++ engine
+function ModCore.DispatchHook(hookName, ...)
+    return ModCore.Hooks.Fire(hookName, ...)
+end
+
+-- Frontend sugar: ModCore.On("OnWorldUpdate", callback, priority)
+function ModCore.On(hookName, callback, priority, doc)
+    return ModCore.Hooks.Register(hookName, callback, priority, doc)
+end
+
+-- Frontend aliases
+ModCore.RegisterHook   = ModCore.Hooks.Register
+ModCore.UnregisterHook = ModCore.Hooks.Unregister
+ModCore.FireHook       = ModCore.Hooks.Fire
+ModCore.HasListeners   = ModCore.Hooks.HasListeners
+
+-- Returns array of all active hooks
+function ModCore.GetHookList()
+    return ModCore.Hooks.GetHookList()
+end
+
+-- Returns machine-readable API schema for frontend tools and UI extensions
+function ModCore.GetApiSchema()
+    if ModCore.ApiExport and ModCore.ApiExport.GetSchemaTable then
+        return ModCore.ApiExport.GetSchemaTable()
+    end
+    return {
+        version = ModCore.Version,
+        hooks = ModCore.Hooks.GetHookList()
+    }
+end
+
+-- Triggers runtime re-export of all IDE definitions, JSON schema, and AI guides
+function ModCore.ExportApi()
+    if ModCore_ExportApi then
+        return ModCore_ExportApi()
+    elseif ModCore.ApiExport and ModCore.ApiExport.ExportAll then
+        return ModCore.ApiExport.ExportAll()
+    end
+    return false
+end
+
+-- Metatable routing: ModCore.OnEvent(...) dynamically dispatches to Hooks.Fire("OnEvent", ...)
+local modCoreMt = {
+    __index = function(t, key)
+        if type(key) == "string" and string.sub(key, 1, 2) == "On" then
+            return function(...)
+                return ModCore.Hooks.Fire(key, ...)
+            end
+        end
+        return rawget(t, key)
+    end
+}
+setmetatable(ModCore, modCoreMt)
+
+-- ==============================================================================
+-- Mod Mounting & Discovery
+-- ==============================================================================
+
 function ModCore.MountMod(modDir, manifest)
     if not manifest or not manifest.id then
         ModCore.LogError("Cannot mount mod at %s: missing manifest.id", modDir)
@@ -99,7 +162,6 @@ function ModCore.MountMod(modDir, manifest)
             ModCore.LogError("Error executing entrypoint %s: %s", entryFullPath, tostring(runErr))
         end
     else
-        -- Check if it's optional
         if manifest.entryPoint then
             ModCore.LogError("Failed to load mod entrypoint %s: %s", entryFullPath, tostring(err))
         end
@@ -110,30 +172,4 @@ function ModCore.MountMod(modDir, manifest)
     return true
 end
 
--- Lifecycle Hook: Called by C++ engine when all core subsystems are ready
-function ModCore.OnEngineInit()
-    ModCore.LogInfo("ModCore.OnEngineInit dispatched")
-    ModCore.Hooks.Fire("OnEngineInit")
-end
-
--- Lifecycle Hook: Called when world is rendered each frame
-function ModCore.OnWorldRender(worldFrame)
-    ModCore.Hooks.Fire("OnWorldRender", worldFrame)
-end
-
--- Lifecycle Hook: Called during per-frame tick
-function ModCore.OnWorldUpdate(dt)
-    ModCore.Hooks.Fire("OnWorldUpdate", dt)
-end
-
--- Lifecycle Hook: Called on packet reception
-function ModCore.OnPacketReceived(opcode, time, packetReader)
-    return ModCore.Hooks.Fire("OnPacketReceived", opcode, time, packetReader)
-end
-
--- Lifecycle Hook: Called on spell query
-function ModCore.OnSpellQuery(queryType, spellId, ...)
-    return ModCore.Hooks.Fire("OnSpellQuery", queryType, spellId, ...)
-end
-
-ModCore.LogInfo("Bootstrap completed successfully.")
+ModCore.LogInfo("Bootstrap completed successfully. Hook bus ready.")

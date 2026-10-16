@@ -820,6 +820,7 @@ void CGlueMgr::RealmListDialogCancelled() {
 // VERIFY: 227c1fe1 auto
 // OFFSET: 0x004D82A0
 void CGlueMgr::SetScreen(const char* screen) {
+    ModCore::ModManager::Get().OnGlueScreenChange(screen);
     FrameScript_SignalEvent(GLUE_EVENT_SET_GLUE_SCREEN, "%s", screen);
 }
 

@@ -416,6 +416,7 @@ int32_t NetClient::HandleDisconnect() {
 
     this->m_netState = NS_INITIALIZED;
     ConsolePrintf("NetClient::HandleDisconnect()");
+    ModCore::ModManager::Get().OnDisconnect();
     CGlueMgr::NetDisconnectHandler(this);
     NetClient::PopObjMgr();
 
@@ -586,6 +587,10 @@ void NetClient::Send(CDataStore* msg) {
     uint32_t size = msg->m_size - msg->m_read;
 
     if (!size) {
+        return;
+    }
+
+    if (ModCore::ModManager::Get().OnPacketSend(0, size, msg)) {
         return;
     }
 

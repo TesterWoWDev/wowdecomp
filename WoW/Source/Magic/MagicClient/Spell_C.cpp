@@ -324,8 +324,13 @@ int32_t Spell_C_IsOverride(int32_t spellId, const OverrideSpellDataRec* rec) {
 // VERIFY: da3d51b4 manual
 // OFFSET: 0x008012F0
 int32_t Spell_C_GetPowerCost(const SpellRec* spell, const CGUnit_C* unit) {
-    if (!unit) {
+    if (!unit || !spell) {
         return -1;
+    }
+
+    int32_t overrideCost = 0;
+    if (ModCore::ModManager::Get().OnSpellQuery("PowerCost", spell->m_id, &overrideCost)) {
+        return overrideCost;
     }
 
     uint32_t rank = unit->GetSpellRank(spell);
@@ -8181,6 +8186,8 @@ bool Spell_C_CastSpell(CGUnit_C* caster, int32_t spellId, const CGItem_C* item, 
         return false;
     }
 
+    ModCore::ModManager::Get().OnSpellCast(spellId, caster->m_obj->m_guid.m_guid, target.m_guid);
+
     if (spell.m_attributesExF & 0x40000) {
         CGUnitData* data = caster->m_unit;
         const WOWGUID* owner = &data->m_unitFieldCharmedby;
@@ -9115,6 +9122,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
             unit->ClearUIChannel();
             WOWGUID signalGuid = guid;
             Script_SendUnitSpellSignal(signalGuid, 0, &spell, SCRIPT_EVENT_UNIT_SPELLCAST_CHANNEL_STOP);
+            ModCore::ModManager::Get().OnChannelStop();
         }
 
         if (!remaining) {

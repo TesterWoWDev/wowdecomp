@@ -8,6 +8,10 @@ ApiExport.Functions = {}
 ApiExport.Hooks = {}
 ApiExport.Opcodes = {}
 
+if ModCore then
+    ModCore.ApiExport = ApiExport
+end
+
 function ApiExport.RegisterClass(className, doc, fields, methods)
     ApiExport.Classes[className] = {
         name = className,
@@ -26,11 +30,12 @@ function ApiExport.RegisterFunction(funcName, doc, params, returnType)
     }
 end
 
-function ApiExport.RegisterHook(hookName, doc, signature)
+function ApiExport.RegisterHook(hookName, doc, signature, category)
     ApiExport.Hooks[hookName] = {
         name = hookName,
         doc = doc or "",
-        signature = signature or "fun(...): any?"
+        signature = signature or "fun(...): any?",
+        category = category or "General"
     }
 end
 
@@ -38,8 +43,19 @@ function ApiExport.RegisterOpcode(name, opcode, direction, schema)
     ApiExport.Opcodes[name] = {
         name = name,
         opcode = opcode,
-        direction = direction,
+        direction = direction or "CLIENT_TO_SERVER",
         schema = schema or {}
+    }
+end
+
+-- Return structured table for frontend runtime inspection
+function ApiExport.GetSchemaTable()
+    return {
+        version = ModCore and ModCore.Version or "1.1.0",
+        classes = ApiExport.Classes,
+        functions = ApiExport.Functions,
+        hooks = ApiExport.Hooks,
+        opcodes = ApiExport.Opcodes
     }
 end
 
@@ -47,7 +63,13 @@ end
 function ApiExport.GenerateEmmyLua()
     local lines = {}
     table.insert(lines, "---@meta wowdecomp")
-    table.insert(lines, "-- Auto-generated API definitions for wowdecomp Modding Framework")
+    table.insert(lines, "-- Auto-generated API definitions for wowdecomp Universal Modding Framework")
+    table.insert(lines, "")
+
+    -- Hook Aliases
+    for name, hook in pairs(ApiExport.Hooks) do
+        table.insert(lines, string.format("---@alias HookCallback_%s %s", name, hook.signature))
+    end
     table.insert(lines, "")
 
     -- Classes
@@ -100,7 +122,10 @@ function ApiExport.GenerateEmmyLua()
     return table.concat(lines, "\n")
 end
 
--- Pre-register baseline engine types
+-- ==============================================================================
+-- Baseline System Registrations
+-- ==============================================================================
+
 ApiExport.RegisterClass("C3Vector", "3D coordinate vector in World space", {
     { name = "x", type = "number", doc = "X coordinate" },
     { name = "y", type = "number", doc = "Y coordinate" },
@@ -114,10 +139,64 @@ ApiExport.RegisterClass("WOWGUID", "64-bit entity identifier in World of Warcraf
     { name = "IsValid", doc = "Returns true if GUID is non-zero", returnType = "boolean" }
 })
 
-ApiExport.RegisterHook("OnEngineInit", "Fired when client engine completes initialization", "fun()")
-ApiExport.RegisterHook("OnWorldRender", "Fired each frame during 3D world rendering pass", "fun(worldFrame: any)")
-ApiExport.RegisterHook("OnWorldUpdate", "Fired every game tick with delta time", "fun(dt: number)")
-ApiExport.RegisterHook("OnPacketReceived", "Fired when custom network packet arrives", "fun(opcode: integer, time: integer, reader: any): boolean?")
-ApiExport.RegisterHook("OnSpellQuery", "Fired when spell power/range/cast time is queried", "fun(queryType: string, spellId: integer, ...): any?")
+-- Lifecycle Hooks
+ApiExport.RegisterHook("OnEngineInit", "Fired when client engine completes initialization", "fun()", "Lifecycle")
+ApiExport.RegisterHook("OnEngineShutdown", "Fired when client engine begins shutdown", "fun()", "Lifecycle")
+ApiExport.RegisterHook("OnGameInitialize", "Fired when game world session initializes", "fun()", "Lifecycle")
+ApiExport.RegisterHook("OnGameDestroy", "Fired when game world session shuts down", "fun()", "Lifecycle")
+ApiExport.RegisterHook("OnFrameTick", "Fired every engine loop tick", "fun(dt: number)", "Lifecycle")
+
+-- World & Map Hooks
+ApiExport.RegisterHook("OnEnterWorld", "Fired when player enters 3D world", "fun()", "World")
+ApiExport.RegisterHook("OnLeaveWorld", "Fired when player leaves 3D world", "fun()", "World")
+ApiExport.RegisterHook("OnMapChange", "Fired when active map changes", "fun(mapName: string, zoneId: integer)", "World")
+ApiExport.RegisterHook("OnWorldUpdate", "Fired every game update tick", "fun(dt: number)", "World")
+ApiExport.RegisterHook("OnWorldRender", "Fired during 3D world rendering pass", "fun(worldFrame: any)", "World")
+ApiExport.RegisterHook("OnWorldHitTest", "Fired on raycast entity/surface hit", "fun(guid: number, point: any, hitObject: boolean)", "World")
+ApiExport.RegisterHook("OnTerrainTrack", "Fired during terrain tracking query", "fun(point: any): boolean?", "World")
+ApiExport.RegisterHook("OnTerrainClick", "Fired when clicking terrain ground", "fun(button: integer, x: number, y: number, z: number): boolean?", "World")
+
+-- Glue / UI Hooks
+ApiExport.RegisterHook("OnGlueResume", "Fired when Glue screen resumes", "fun()", "Glue")
+ApiExport.RegisterHook("OnGlueIdle", "Fired each frame on Glue screen", "fun()", "Glue")
+ApiExport.RegisterHook("OnGlueScreenChange", "Fired on Glue screen transition", "fun(screenName: string)", "Glue")
+ApiExport.RegisterHook("IsLoginBlocked", "Queried before allowing realm login", "fun(): boolean?", "Glue")
+ApiExport.RegisterHook("OnCharacterSelect", "Fired when character is selected", "fun(charIndex: integer)", "Glue")
+ApiExport.RegisterHook("OnCharacterCreate", "Fired on character creation submission", "fun(name: string, race: integer, classId: integer, gender: integer)", "Glue")
+
+-- Network Hooks
+ApiExport.RegisterHook("OnPacketReceived", "Fired when custom network packet arrives", "fun(opcode: integer, time: integer, reader: any): boolean?", "Network")
+ApiExport.RegisterHook("OnPacketSend", "Fired before sending network packet", "fun(opcode: integer, size: integer, reader: any): boolean?", "Network")
+ApiExport.RegisterHook("OnDisconnect", "Fired when disconnected from network", "fun()", "Network")
+
+-- Spell Hooks
+ApiExport.RegisterHook("OnSpellQuery", "Fired on dynamic spell attribute query", "fun(queryType: string, spellId: integer, ...): any?", "Spells")
+ApiExport.RegisterHook("OnSpellCast", "Fired when spell cast starts", "fun(spellId: integer, casterGuid: number, targetGuid: number)", "Spells")
+ApiExport.RegisterHook("OnChannelStart", "Fired when channeling starts", "fun(msg: any)", "Spells")
+ApiExport.RegisterHook("OnChannelUpdate", "Fired on channeling update", "fun(msg: any)", "Spells")
+ApiExport.RegisterHook("OnChannelStop", "Fired when channeling stops", "fun()", "Spells")
+ApiExport.RegisterHook("OnSpellDestroy", "Fired when spell instance is destroyed", "fun()", "Spells")
+
+-- Tooltip Hooks
+ApiExport.RegisterHook("OnTooltipEvaluate", "Fired when evaluating dynamic tooltip text", "fun(spellId: integer, caster: any, defaultText: string): string?", "Tooltips")
+ApiExport.RegisterHook("OnTooltipSetSpell", "Fired when setting spell tooltip", "fun(tooltip: any, spellId: integer)", "Tooltips")
+ApiExport.RegisterHook("OnTooltipSetItem", "Fired when setting item tooltip", "fun(tooltip: any, itemId: integer)", "Tooltips")
+ApiExport.RegisterHook("OnTooltipSetUnit", "Fired when setting unit tooltip", "fun(tooltip: any, unitGuid: number)", "Tooltips")
+
+-- Object Management Hooks
+ApiExport.RegisterHook("OnObjectCreate", "Fired when entity spawns", "fun(guid: number, typeId: integer, objectPtr: any)", "Objects")
+ApiExport.RegisterHook("OnObjectDestroy", "Fired when entity despawns", "fun(guid: number, typeId: integer, objectPtr: any)", "Objects")
+ApiExport.RegisterHook("OnTargetChanged", "Fired when player target changes", "fun(oldGuid: number, newGuid: number)", "Objects")
+
+-- Input Hooks
+ApiExport.RegisterHook("OnKeyDown", "Fired on key press", "fun(key: integer, modifiers: integer, keyString: string): boolean?", "Input")
+ApiExport.RegisterHook("OnKeyUp", "Fired on key release", "fun(key: integer, modifiers: integer, keyString: string): boolean?", "Input")
+ApiExport.RegisterHook("OnMouseDown", "Fired on mouse press", "fun(button: integer, x: integer, y: integer): boolean?", "Input")
+ApiExport.RegisterHook("OnMouseUp", "Fired on mouse release", "fun(button: integer, x: integer, y: integer): boolean?", "Input")
+ApiExport.RegisterHook("OnMouseWheel", "Fired on mouse wheel scroll", "fun(delta: integer): boolean?", "Input")
+
+-- Chat Hooks
+ApiExport.RegisterHook("OnChatMessage", "Fired on incoming chat message", "fun(type: integer, sender: string, message: string, channel: string): boolean?", "Chat")
+ApiExport.RegisterHook("OnSendChatMessage", "Fired on outgoing chat message", "fun(message: string, type: integer, language: integer, target: string): boolean?", "Chat")
 
 return ApiExport

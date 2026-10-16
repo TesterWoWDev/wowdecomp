@@ -2375,6 +2375,9 @@ int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
     }
 
     state.m_modifiers = evt.m_data.m_metaKeyState;
+    if (ModCore::ModManager::Get().OnKeyDown(key, state.m_modifiers, state.m_keyString)) {
+        return 1;
+    }
     return CGUIBindings::s_bindings->ExecKey(state.m_modifiers, state.m_keyString, 1, 1, static_cast<BINDING_MODE>(4));
 }
 
@@ -2406,6 +2409,10 @@ int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
 
     if (state.m_keyString[0]) {
         state.m_modifiers |= evt.m_data.m_metaKeyState;
+        if (ModCore::ModManager::Get().OnKeyUp(key, state.m_modifiers, state.m_keyString)) {
+            state.m_keyString[0] = 0;
+            return 1;
+        }
         result = CGUIBindings::s_bindings->ExecKey(state.m_modifiers, state.m_keyString, 0, 1, static_cast<BINDING_MODE>(4));
         state.m_keyString[0] = 0;
     }
@@ -2417,6 +2424,10 @@ int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
 // OFFSET: 0x004F6C10
 int32_t CGWorldFrame::OnLayerMouseDown(const CMouseEvent& evt, const char* btn) {
     if (this->CSimpleFrame::OnLayerMouseDown(evt, btn) || CGGameUI::HandleMouseDown(evt)) {
+        return 1;
+    }
+
+    if (ModCore::ModManager::Get().OnMouseDown(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
         return 1;
     }
 
@@ -2434,6 +2445,10 @@ int32_t CGWorldFrame::OnLayerMouseDown(const CMouseEvent& evt, const char* btn) 
 // OFFSET: 0x004F6C90
 int32_t CGWorldFrame::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
     if (this->CSimpleFrame::OnLayerMouseUp(evt, btn)) {
+        return 1;
+    }
+
+    if (ModCore::ModManager::Get().OnMouseUp(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
         return 1;
     }
 
@@ -2466,6 +2481,10 @@ int32_t CGWorldFrame::SetupDefaultAction() {
 // OFFSET: 0x004F5C80
 int32_t CGWorldFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
     if (this->CSimpleFrame::OnLayerMouseWheel(evt) || !evt.m_data.m_wheelAmount) {
+        return 1;
+    }
+
+    if (ModCore::ModManager::Get().OnMouseWheel(evt.m_data.m_wheelAmount)) {
         return 1;
     }
 
