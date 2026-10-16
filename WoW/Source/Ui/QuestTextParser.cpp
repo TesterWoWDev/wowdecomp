@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include "WoW/Source/ModCore/TooltipEvaluator.h"
 #include "WoW/Source/Ui/ChatFrame.h"
 #include "WoW/Source/DB/Rec/AchievementRec.h"
 #include "WoW/Source/Game/GameClient/NameCache.h"
@@ -1117,7 +1118,25 @@ int32_t SpellParserParseText(const SpellRec* spell, char* buffer, uint32_t size,
     }
 
     const char* cursor = SStrChr(description, '$');
-    int32_t result = SpellParserParseSubText(spell, buffer, size, parsePet, parseUnit, spellLevel, scale, noModifiers, description, &cursor);
+    std::string evaluatedDesc;
+    if (description) {
+        char evaluatedBuffer[4096];
+        if (ModCore::TooltipEvaluator::EvaluateText(spell, description, evaluatedBuffer, sizeof(evaluatedBuffer), useAuraDescription ? (std::max)(1, scale) : 0)) {
+            if (!SStrChr(evaluatedBuffer, '$')) {
+                SStrCopy(buffer, evaluatedBuffer, size);
+                s_spellVariables.m_count = 0;
+                return 1;
+            }
+            evaluatedDesc = evaluatedBuffer;
+            description = evaluatedDesc.c_str();
+        }
+    }
+
+    std::string expandedDesc = ModCore::TooltipEvaluator::ExpandTooltipText(spell, description);
+    const char* descToParse = expandedDesc.c_str();
+
+    cursor = SStrChr(descToParse, '$');
+    int32_t result = SpellParserParseSubText(spell, buffer, size, parsePet, parseUnit, spellLevel, scale, noModifiers, descToParse, &cursor);
     s_spellVariables.m_count = 0;
     return result;
 }
