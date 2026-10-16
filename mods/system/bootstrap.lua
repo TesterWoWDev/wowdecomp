@@ -137,4 +137,3 @@ function ModCore.OnSpellQuery(queryType, spellId, ...)
 end
 
 ModCore.LogInfo("Bootstrap completed successfully.")
-return ModCore

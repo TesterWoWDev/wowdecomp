@@ -123,6 +123,7 @@ namespace ModCore
         {
             const char* err = lua_tostring(L, -1);
             std::cerr << "[ModCore] Syntax error compiling " << scriptPath.string() << ": " << (err ? err : "") << std::endl;
+            lua_pop(L, 1);
             return false;
         }
 

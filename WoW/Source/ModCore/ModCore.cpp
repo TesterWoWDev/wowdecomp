@@ -179,7 +179,7 @@ namespace ModCore
         std::filesystem::path bootstrapPath = m_modsPath / "system" / "bootstrap.lua";
         if (BytecodeCache::Get().LoadScript(m_L, bootstrapPath, "bootstrap.lua"))
         {
-            if (lua_pcall(m_L, 0, LUA_MULTRET, 0) != 0)
+            if (lua_pcall(m_L, 0, 0, 0) != 0)
             {
                 const char* err = lua_tostring(m_L, -1);
                 std::cerr << "[ModCore] Error executing bootstrap.lua: " << (err ? err : "") << std::endl;
@@ -206,6 +206,9 @@ namespace ModCore
             FileWatcher::Get().Start(m_modsPath);
             std::cout << "[ModCore] FileWatcher active on " << m_modsPath.string() << std::endl;
         }
+
+        // Ensure stack is completely clear for Blizzard FrameScript assertion
+        lua_settop(m_L, 0);
     }
 
     void ModManager::DiscoverAndMountMods()
@@ -263,16 +266,19 @@ namespace ModCore
         std::cout << "[ModCore] Hot-reloading script: " << scriptPath.filename().string() << std::endl;
         if (BytecodeCache::Get().LoadScript(m_L, scriptPath, scriptPath.filename().string()))
         {
-            if (lua_pcall(m_L, 0, LUA_MULTRET, 0) != 0)
+            if (lua_pcall(m_L, 0, 0, 0) != 0)
             {
                 const char* err = lua_tostring(m_L, -1);
                 std::cerr << "[ModCore] Error hot-reloading " << scriptPath.string() << ": " << (err ? err : "") << std::endl;
                 lua_pop(m_L, 1);
+                lua_settop(m_L, 0);
                 return false;
             }
             std::cout << "[ModCore] Successfully reloaded: " << scriptPath.filename().string() << std::endl;
+            lua_settop(m_L, 0);
             return true;
         }
+        lua_settop(m_L, 0);
         return false;
     }
 
@@ -280,6 +286,7 @@ namespace ModCore
     {
         if (!m_L) return;
         FrameScript_Execute("if ModCore and ModCore.OnEngineInit then ModCore.OnEngineInit() end", "ModCore_OnEngineInit", nullptr);
+        lua_settop(m_L, 0);
     }
 
     void ModManager::OnWorldUpdate(float dt)
@@ -315,6 +322,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
     }
 
     void ModManager::OnWorldRender(void* worldFrame)
@@ -339,6 +347,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
     }
 
     bool ModManager::OnPacketReceived(uint32_t opcode, uint32_t time, void* dataStore)
@@ -346,6 +355,7 @@ namespace ModCore
         // 1. Intercept custom network packets (0x102 / 0x7A00)
         if (CustomPacketManager::Get().HandlePacket(opcode, time, dataStore))
         {
+            if (m_L) lua_settop(m_L, 0);
             return true;
         }
 
@@ -380,6 +390,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
         return handled;
     }
 
@@ -417,6 +428,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
         return handled;
     }
 
@@ -448,6 +460,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
     }
 
     bool ModManager::OnTerrainTrack(const void* point)
@@ -478,6 +491,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
         return consumed;
     }
 
@@ -507,6 +521,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
     }
 
     void ModManager::OnChannelUpdate(void* msg)
@@ -530,6 +545,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
     }
 
     void ModManager::OnGlueResume()
@@ -579,6 +595,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
         return blocked;
     }
 
@@ -607,6 +624,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
+        lua_settop(m_L, 0);
         return success;
     }
 }

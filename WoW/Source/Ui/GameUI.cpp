@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
+#include <iostream>
 #include "Engine/Source/Base/CDataStore.h"
 #include "Engine/Source/Base/Coordinate.h"
 #include "Engine/Source/BlizzardCore/SFile2-Core.h"
@@ -1995,8 +1996,9 @@ int32_t CGGameUI::Idle(const void* data, void* param) {
     lua_State* L = FrameScript_GetContext();
     lua_taintexpected = 0;
 
-    if (lua_gettop(FrameScript_GetContext())) {
-        SErrDisplayAppFatalMessage("", "", 0);
+    if (int stackTop = lua_gettop(L)) {
+        std::cerr << "[GameUI] Warning: lua stack dirty (" << stackTop << ") in CGGameUI::Idle. Clearing stack." << std::endl;
+        lua_settop(L, 0);
     }
 
     CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));

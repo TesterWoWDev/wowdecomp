@@ -721,5 +721,9 @@ end
 
         FrameScript_Execute(s_clientNetworkLua, "ClientNetwork.lua", nullptr);
         FrameScript_Execute(s_loggerLua, "Logger.lua", nullptr);
+        if (L)
+        {
+            lua_settop(L, 0);
+        }
     }
 }
