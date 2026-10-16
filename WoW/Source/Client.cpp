@@ -1601,8 +1601,8 @@ void ClientDestroyGame(int32_t charSelect, int32_t resumeGlue, int32_t worldLogi
     WeaponTrailsShutdown();
     PlayerNameShutdown();
     WorldTextShutdown();
-    CGGameUI::ShutdownGame();
     ModCore::ModManager::Get().DispatchHook("OnGameDestroy");
+    CGGameUI::ShutdownGame();
     ClientDestroyGameTime();
     SI2::ShutdownZoneSoundsHandler();
     SI2::StopAllSounds();

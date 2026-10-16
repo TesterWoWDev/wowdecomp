@@ -285,7 +285,9 @@ namespace ModCore
 
     void ModManager::OnEngineInit()
     {
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
         FrameScript_Execute("if ModCore and ModCore.OnEngineInit then ModCore.OnEngineInit() end", "ModCore_OnEngineInit", nullptr);
         lua_settop(m_L, top);
@@ -303,7 +305,9 @@ namespace ModCore
             }
         }
 
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
 
         // Dispatch frame update to Lua
@@ -330,7 +334,9 @@ namespace ModCore
 
     void ModManager::OnWorldRender(void* worldFrame)
     {
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
 
         lua_getglobal(m_L, "ModCore");
@@ -362,7 +368,9 @@ namespace ModCore
             return true;
         }
 
-        if (!m_L) return false;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return false;
+        m_L = L;
         int top = lua_gettop(m_L);
 
         bool handled = false;
@@ -400,7 +408,9 @@ namespace ModCore
 
     bool ModManager::OnSpellQuery(const char* queryType, uint32_t spellId, int32_t* outResult)
     {
-        if (!m_L || !queryType) return false;
+        lua_State* L = FrameScript_GetContext();
+        if (!L || !queryType) return false;
+        m_L = L;
         int top = lua_gettop(m_L);
 
         bool handled = false;
@@ -444,7 +454,9 @@ namespace ModCore
 
     void ModManager::OnWorldHitTest(uint64_t guid, const void* point, bool hitObject)
     {
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -471,7 +483,9 @@ namespace ModCore
 
     bool ModManager::OnTerrainTrack(const void* point)
     {
-        if (!m_L) return false;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return false;
+        m_L = L;
         int top = lua_gettop(m_L);
         bool consumed = false;
         lua_getglobal(m_L, "ModCore");
@@ -509,7 +523,9 @@ namespace ModCore
 
     void ModManager::OnChannelStart(void* msg)
     {
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -534,7 +550,9 @@ namespace ModCore
 
     void ModManager::OnChannelUpdate(void* msg)
     {
-        if (!m_L) return;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return;
+        m_L = L;
         int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -579,7 +597,9 @@ namespace ModCore
 
     bool ModManager::IsLoginBlocked()
     {
-        if (!m_L) return false;
+        lua_State* L = FrameScript_GetContext();
+        if (!L) return false;
+        m_L = L;
         int top = lua_gettop(m_L);
         bool blocked = false;
         lua_getglobal(m_L, "ModCore");
@@ -611,7 +631,9 @@ namespace ModCore
 
     bool ModManager::DispatchHook(const char* hookName)
     {
-        if (!m_L || !hookName) return false;
+        lua_State* L = FrameScript_GetContext();
+        if (!L || !hookName) return false;
+        m_L = L;
         int top = lua_gettop(m_L);
         bool success = false;
         lua_getglobal(m_L, "ModCore");
