@@ -159,8 +159,8 @@ namespace ModCore
             return;
 
         m_L = L;
+        int top = lua_gettop(m_L);
         std::cout << "[ModCore] Registering Lua bindings and executing bootstrap..." << std::endl;
-
 
         // Register loadfile helper via BytecodeCache
         FrameScript_RegisterFunction("loadfile", Script_LoadFile);
@@ -207,8 +207,8 @@ namespace ModCore
             std::cout << "[ModCore] FileWatcher active on " << m_modsPath.string() << std::endl;
         }
 
-        // Ensure stack is completely clear for Blizzard FrameScript assertion
-        lua_settop(m_L, 0);
+        // Ensure stack is restored for caller
+        lua_settop(m_L, top);
     }
 
     void ModManager::DiscoverAndMountMods()
@@ -263,6 +263,7 @@ namespace ModCore
         if (!m_L || !std::filesystem::exists(scriptPath))
             return false;
 
+        int top = lua_gettop(m_L);
         std::cout << "[ModCore] Hot-reloading script: " << scriptPath.filename().string() << std::endl;
         if (BytecodeCache::Get().LoadScript(m_L, scriptPath, scriptPath.filename().string()))
         {
@@ -271,22 +272,23 @@ namespace ModCore
                 const char* err = lua_tostring(m_L, -1);
                 std::cerr << "[ModCore] Error hot-reloading " << scriptPath.string() << ": " << (err ? err : "") << std::endl;
                 lua_pop(m_L, 1);
-                lua_settop(m_L, 0);
+                lua_settop(m_L, top);
                 return false;
             }
             std::cout << "[ModCore] Successfully reloaded: " << scriptPath.filename().string() << std::endl;
-            lua_settop(m_L, 0);
+            lua_settop(m_L, top);
             return true;
         }
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return false;
     }
 
     void ModManager::OnEngineInit()
     {
         if (!m_L) return;
+        int top = lua_gettop(m_L);
         FrameScript_Execute("if ModCore and ModCore.OnEngineInit then ModCore.OnEngineInit() end", "ModCore_OnEngineInit", nullptr);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     void ModManager::OnWorldUpdate(float dt)
@@ -302,6 +304,7 @@ namespace ModCore
         }
 
         if (!m_L) return;
+        int top = lua_gettop(m_L);
 
         // Dispatch frame update to Lua
         lua_getglobal(m_L, "ModCore");
@@ -322,12 +325,13 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     void ModManager::OnWorldRender(void* worldFrame)
     {
         if (!m_L) return;
+        int top = lua_gettop(m_L);
 
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -347,7 +351,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     bool ModManager::OnPacketReceived(uint32_t opcode, uint32_t time, void* dataStore)
@@ -355,11 +359,11 @@ namespace ModCore
         // 1. Intercept custom network packets (0x102 / 0x7A00)
         if (CustomPacketManager::Get().HandlePacket(opcode, time, dataStore))
         {
-            if (m_L) lua_settop(m_L, 0);
             return true;
         }
 
         if (!m_L) return false;
+        int top = lua_gettop(m_L);
 
         bool handled = false;
         lua_getglobal(m_L, "ModCore");
@@ -390,13 +394,14 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return handled;
     }
 
     bool ModManager::OnSpellQuery(const char* queryType, uint32_t spellId, int32_t* outResult)
     {
         if (!m_L || !queryType) return false;
+        int top = lua_gettop(m_L);
 
         bool handled = false;
         lua_getglobal(m_L, "ModCore");
@@ -428,7 +433,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return handled;
     }
 
@@ -440,6 +445,7 @@ namespace ModCore
     void ModManager::OnWorldHitTest(uint64_t guid, const void* point, bool hitObject)
     {
         if (!m_L) return;
+        int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
         {
@@ -460,12 +466,13 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     bool ModManager::OnTerrainTrack(const void* point)
     {
         if (!m_L) return false;
+        int top = lua_gettop(m_L);
         bool consumed = false;
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -491,7 +498,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return consumed;
     }
 
@@ -503,6 +510,7 @@ namespace ModCore
     void ModManager::OnChannelStart(void* msg)
     {
         if (!m_L) return;
+        int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
         {
@@ -521,12 +529,13 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     void ModManager::OnChannelUpdate(void* msg)
     {
         if (!m_L) return;
+        int top = lua_gettop(m_L);
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
         {
@@ -545,7 +554,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
     }
 
     void ModManager::OnGlueResume()
@@ -571,6 +580,7 @@ namespace ModCore
     bool ModManager::IsLoginBlocked()
     {
         if (!m_L) return false;
+        int top = lua_gettop(m_L);
         bool blocked = false;
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -595,13 +605,14 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return blocked;
     }
 
     bool ModManager::DispatchHook(const char* hookName)
     {
         if (!m_L || !hookName) return false;
+        int top = lua_gettop(m_L);
         bool success = false;
         lua_getglobal(m_L, "ModCore");
         if (lua_istable(m_L, -1))
@@ -624,7 +635,7 @@ namespace ModCore
             }
         }
         lua_pop(m_L, 1);
-        lua_settop(m_L, 0);
+        lua_settop(m_L, top);
         return success;
     }
 }

@@ -716,6 +716,7 @@ end
 
     void CustomPacketManager::RegisterLuaBindings(lua_State* L)
     {
+        int top = L ? lua_gettop(L) : 0;
         FrameScript_RegisterFunction("_CLIENT_NETWORK", Script_CLIENT_NETWORK);
         FrameScript_RegisterFunction("_LUA_LOG", Script_LuaLog);
 
@@ -723,7 +724,7 @@ end
         FrameScript_Execute(s_loggerLua, "Logger.lua", nullptr);
         if (L)
         {
-            lua_settop(L, 0);
+            lua_settop(L, top);
         }
     }
 }
