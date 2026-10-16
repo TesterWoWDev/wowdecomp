@@ -475,7 +475,8 @@ void TEXTURECACHE::MsdfTextureCallback(EGxTexCommand command, uint32_t width, ui
             }
 
             CGxFont* font = cache->m_theFace;
-            uint32_t rowY = glyph->m_rowNumber * font->m_cellHeight;
+            uint32_t rowStride = font->m_cellHeight + 4;
+            uint32_t rowY = glyph->m_rowNumber * rowStride;
             if (rowY >= atlasSize) {
                 continue;
             }
@@ -516,7 +517,8 @@ void TEXTURECACHE::Initialize(CGxFont* face, uint32_t cellHeight) {
     if (cellHeight == 0) {
         cellHeight = 16;
     }
-    uint32_t rows = atlasSize / cellHeight;
+    uint32_t rowStride = this->m_isMsdfCache ? (cellHeight + 4) : cellHeight;
+    uint32_t rows = atlasSize / rowStride;
     if (rows == 0) {
         rows = 1;
     }
