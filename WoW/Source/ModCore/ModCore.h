@@ -110,4 +110,10 @@ namespace ModCore
         bool m_hotReloadEnabled = true;
         bool m_aiExportOnBoot = true;
     };
+
+    // Concise singleton accessor
+    inline ModManager& Manager()
+    {
+        return ModManager::Get();
+    }
 }

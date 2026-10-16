@@ -1043,7 +1043,7 @@ void CGChat::AddChatMessage(const char* text, int32_t type, const char* senderNa
         return;
     }
 
-    if (ModCore::ModManager::Get().OnChatMessage(type, senderName ? senderName : "", text, channelName ? channelName : "")) {
+    if (ModCore::Manager().OnChatMessage(type, senderName ? senderName : "", text, channelName ? channelName : "")) {
         return;
     }
 

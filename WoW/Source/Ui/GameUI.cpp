@@ -2854,7 +2854,7 @@ void CGGameUI::Target(WOWGUID guid) {
     CGGameUI::SendTarget(guid);
     CGSpellBook::UpdateUsable();
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_TARGET_CHANGED, nullptr);
-    ModCore::ModManager::Get().OnTargetChanged(CGGameUI::m_lastTarget.m_guid, guid.m_guid);
+    ModCore::Manager().OnTargetChanged(CGGameUI::m_lastTarget.m_guid, guid.m_guid);
 
     if (g_stopAutoAttackOnTargetChangeCVar->m_intValue) {
         if (Spell_C_GetAutoRepeatingSpell()) {
@@ -2868,7 +2868,7 @@ void CGGameUI::Target(WOWGUID guid) {
 // VERIFY: fbb342ce manual
 // OFFSET: 0x00527360
 int32_t CGGameUI::OnTerrainClick(const CTerrainClickEvent& evt) {
-    if (ModCore::ModManager::Get().OnTerrainClick(evt.m_button, evt.m_point.x, evt.m_point.y, evt.m_point.z)) {
+    if (ModCore::Manager().OnTerrainClick(evt.m_button, evt.m_point.x, evt.m_point.y, evt.m_point.z)) {
         return 1;
     }
 
@@ -3727,7 +3727,7 @@ void CGGameUI::EnterWorld() {
     }
 
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_ENTERING_WORLD, nullptr);
-    ModCore::ModManager::Get().OnEnterWorld();
+    ModCore::Manager().OnEnterWorld();
     CGMinimapFrame::EnterWorld();
     CGChat::EnterWorld();
     CGActionBar::EnterWorld();
@@ -8224,7 +8224,7 @@ void CGGameUI::LeaveWorld() {
     }
 
     FrameScript_SignalEvent(SCRIPT_EVENT_PLAYER_LEAVING_WORLD, nullptr);
-    ModCore::ModManager::Get().OnLeaveWorld();
+    ModCore::Manager().OnLeaveWorld();
 }
 
 // VERIFY: f11d2535 manual

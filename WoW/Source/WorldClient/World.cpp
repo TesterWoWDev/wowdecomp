@@ -1368,7 +1368,7 @@ void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID, in
     World::PrepareAreaOfInterest(*position);
     CWorld::gbChunkRectOld = CWorld::gbChunkRect;
     CMap::Load(mapName, zoneID);
-    ModCore::ModManager::Get().OnMapChange(mapName, zoneID);
+    ModCore::Manager().OnMapChange(mapName, zoneID);
 
     int32_t shaders = Enable_Doodads;
 

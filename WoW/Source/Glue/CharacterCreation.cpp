@@ -351,7 +351,7 @@ void CCharacterCreation::CreateCharacter(const char* name) {
             CGlueMgr::CustomizeCharacter(guid, &info);
         }
     } else {
-        ModCore::ModManager::Get().OnCharacterCreate(info.m_name, info.m_raceID, info.m_classID, info.m_sexID);
+        ModCore::Manager().OnCharacterCreate(info.m_name, info.m_raceID, info.m_classID, info.m_sexID);
         CGlueMgr::CreateCharacter(&info);
     }
 }

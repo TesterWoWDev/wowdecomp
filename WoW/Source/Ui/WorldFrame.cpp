@@ -297,7 +297,7 @@ void CGWorldFrame::GetCameraPosition(C3Vector* position) {
 // VERIFY: c8cc818e auto
 // OFFSET: 0x004F66C0
 void CGWorldFrame::OnLayerTrackTerrain(const HITTESTRESULT& result) {
-    if (ModCore::ModManager::Get().OnTerrainTrack(&result.m_point)) {
+    if (ModCore::Manager().OnTerrainTrack(&result.m_point)) {
         return;
     }
 
@@ -1203,7 +1203,7 @@ int32_t CGWorldFrame::HitTestPoint(float x, float y, int32_t a3, HITTESTRESULT* 
                 this->m_hitGuid = WOWGUID();
             }
 
-            ModCore::ModManager::Get().OnWorldHitTest(result->m_guid.m_guid, &result->m_point, kind >= 2);
+            ModCore::Manager().OnWorldHitTest(result->m_guid.m_guid, &result->m_point, kind >= 2);
         }
     }
 
@@ -1798,7 +1798,7 @@ void CGWorldFrame::OnWorldRender() {
     GxXformSetViewport(minX, maxX, minY, maxY, minZ, maxZ);
     FFX::Finish();
     CVehiclePassenger_C::PostRenderUpdateAll();
-    ModCore::ModManager::Get().OnWorldRender(this);
+    ModCore::Manager().OnWorldRender(this);
 }
 
 // VERIFY: 79b17fb9 manual
@@ -2070,7 +2070,7 @@ void CGWorldFrame::OnWorldUpdate() {
     CMissile::UpdateStaticLists();
     Spell_C_ExpireDestLocSpellCasts(FrameTime::s_curTimeMs);
     Spell_C_UpdateInTransitList();
-    ModCore::ModManager::Get().OnWorldUpdate();
+    ModCore::Manager().OnWorldUpdate();
 
     C3Vector position = (this->m_camera->m_model || !target) ? camPos : target->GetPosition();
     CWorld::Update(&camPos, &camTarget, &position);
@@ -2375,7 +2375,7 @@ int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
     }
 
     state.m_modifiers = evt.m_data.m_metaKeyState;
-    if (ModCore::ModManager::Get().OnKeyDown(key, state.m_modifiers, state.m_keyString)) {
+    if (ModCore::Manager().OnKeyDown(key, state.m_modifiers, state.m_keyString)) {
         return 1;
     }
     return CGUIBindings::s_bindings->ExecKey(state.m_modifiers, state.m_keyString, 1, 1, static_cast<BINDING_MODE>(4));
@@ -2409,7 +2409,7 @@ int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
 
     if (state.m_keyString[0]) {
         state.m_modifiers |= evt.m_data.m_metaKeyState;
-        if (ModCore::ModManager::Get().OnKeyUp(key, state.m_modifiers, state.m_keyString)) {
+        if (ModCore::Manager().OnKeyUp(key, state.m_modifiers, state.m_keyString)) {
             state.m_keyString[0] = 0;
             return 1;
         }
@@ -2427,7 +2427,7 @@ int32_t CGWorldFrame::OnLayerMouseDown(const CMouseEvent& evt, const char* btn) 
         return 1;
     }
 
-    if (ModCore::ModManager::Get().OnMouseDown(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
+    if (ModCore::Manager().OnMouseDown(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
         return 1;
     }
 
@@ -2448,7 +2448,7 @@ int32_t CGWorldFrame::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
         return 1;
     }
 
-    if (ModCore::ModManager::Get().OnMouseUp(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
+    if (ModCore::Manager().OnMouseUp(MouseButtonToIndex(evt.m_data.m_button), static_cast<int32_t>(evt.m_data.m_mousePosition.x), static_cast<int32_t>(evt.m_data.m_mousePosition.y))) {
         return 1;
     }
 
@@ -2484,7 +2484,7 @@ int32_t CGWorldFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
         return 1;
     }
 
-    if (ModCore::ModManager::Get().OnMouseWheel(evt.m_data.m_wheelAmount)) {
+    if (ModCore::Manager().OnMouseWheel(evt.m_data.m_wheelAmount)) {
         return 1;
     }
 

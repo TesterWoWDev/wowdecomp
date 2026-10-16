@@ -278,7 +278,7 @@ int32_t NetClient::ProcessMessage(uint32_t timeReceived, CDataStore* msg, int32_
     msg->Get(msgId);
     this->ValidateMessageId(msgId);
 
-    if (ModCore::ModManager::Get().OnPacketReceived(msgId, timeReceived, msg)) {
+    if (ModCore::Manager().OnPacketReceived(msgId, timeReceived, msg)) {
         return 1;
     }
 
@@ -416,7 +416,7 @@ int32_t NetClient::HandleDisconnect() {
 
     this->m_netState = NS_INITIALIZED;
     ConsolePrintf("NetClient::HandleDisconnect()");
-    ModCore::ModManager::Get().OnDisconnect();
+    ModCore::Manager().OnDisconnect();
     CGlueMgr::NetDisconnectHandler(this);
     NetClient::PopObjMgr();
 
@@ -590,7 +590,7 @@ void NetClient::Send(CDataStore* msg) {
         return;
     }
 
-    if (ModCore::ModManager::Get().OnPacketSend(0, size, msg)) {
+    if (ModCore::Manager().OnPacketSend(0, size, msg)) {
         return;
     }
 

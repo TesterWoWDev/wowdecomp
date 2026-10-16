@@ -329,7 +329,7 @@ int32_t Spell_C_GetPowerCost(const SpellRec* spell, const CGUnit_C* unit) {
     }
 
     int32_t overrideCost = 0;
-    if (ModCore::ModManager::Get().OnSpellQuery("PowerCost", spell->m_id, &overrideCost)) {
+    if (ModCore::Manager().OnSpellQuery("PowerCost", spell->m_id, &overrideCost)) {
         return overrideCost;
     }
 
@@ -5763,7 +5763,7 @@ void Spell_C_Destroy() {
     s_destLocSpellCasts.InternalClear(0);
     s_enableErrorSpeechCVar = nullptr;
 
-    ModCore::ModManager::Get().OnSpellDestroy();
+    ModCore::Manager().OnSpellDestroy();
 }
 
 // VERIFY: f60bc498 manual
@@ -8186,7 +8186,7 @@ bool Spell_C_CastSpell(CGUnit_C* caster, int32_t spellId, const CGItem_C* item, 
         return false;
     }
 
-    ModCore::ModManager::Get().OnSpellCast(spellId, caster->m_obj->m_guid.m_guid, target.m_guid);
+    ModCore::Manager().OnSpellCast(spellId, caster->m_obj->m_guid.m_guid, target.m_guid);
 
     if (spell.m_attributesExF & 0x40000) {
         CGUnitData* data = caster->m_unit;
@@ -9091,7 +9091,7 @@ int32_t Packet_MSG_CHANNEL_START(void* param, NETMESSAGE msgId, uint32_t time, C
         }
     }
 
-    ModCore::ModManager::Get().OnChannelStart(msg);
+    ModCore::Manager().OnChannelStart(msg);
     return 1;
 }
 
@@ -9106,7 +9106,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
     CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
 
     if (!unit) {
-        ModCore::ModManager::Get().OnChannelUpdate(msg);
+        ModCore::Manager().OnChannelUpdate(msg);
         return 1;
     }
 
@@ -9122,7 +9122,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
             unit->ClearUIChannel();
             WOWGUID signalGuid = guid;
             Script_SendUnitSpellSignal(signalGuid, 0, &spell, SCRIPT_EVENT_UNIT_SPELLCAST_CHANNEL_STOP);
-            ModCore::ModManager::Get().OnChannelStop();
+            ModCore::Manager().OnChannelStop();
         }
 
         if (!remaining) {
@@ -9130,7 +9130,7 @@ int32_t Packet_MSG_CHANNEL_UPDATE(void* param, NETMESSAGE msgId, uint32_t time, 
         }
     }
 
-    ModCore::ModManager::Get().OnChannelUpdate(msg);
+    ModCore::Manager().OnChannelUpdate(msg);
     return 1;
 }
 

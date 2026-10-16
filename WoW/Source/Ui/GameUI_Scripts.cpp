@@ -6566,7 +6566,7 @@ void LoadScriptFunctions() {
     EquipmentManagerRegisterScriptFunctions();
     GMTicketInfoRegisterScriptFunctions();
     BattlenetUI_RegisterScriptFunctions();
-    ModCore::ModManager::Get().RegisterLuaBindings(nullptr);
+    ModCore::Manager().RegisterLuaBindings(nullptr);
 }
 
 // VERIFY: ce499890 manual

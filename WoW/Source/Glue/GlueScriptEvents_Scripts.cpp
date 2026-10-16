@@ -207,7 +207,7 @@ static int32_t Script_AcceptContest(lua_State* L) {
 // VERIFY: 37439067 auto
 // OFFSET: 0x004DC260
 static int32_t Script_DefaultServerLogin(lua_State* L) {
-    if (ModCore::ModManager::Get().IsLoginBlocked()) {
+    if (ModCore::Manager().IsLoginBlocked()) {
         FrameScript_Execute(
             "if ( GlueDialog_Show ) then\n"
             "    GlueDialog_Show(\"OKAY\", \"The game update must finish before logging in.\");\n"

@@ -291,7 +291,7 @@ void ClntObjMgrHideObject(WOWGUID guid) {
 void ClntObjMgrLinkInNewObject(CGObject_C* object) {
     WOWGUID guid = object->m_obj->m_guid;
     s_curMgr->m_objects.Insert(object, static_cast<uint32_t>(guid.m_guid), CHashKeyGUID(guid.m_guid));
-    ModCore::ModManager::Get().OnObjectCreate(guid.m_guid, object->m_typeId, object);
+    ModCore::Manager().OnObjectCreate(guid.m_guid, object->m_typeId, object);
 }
 
 // VERIFY: be60d36c manual
@@ -1436,7 +1436,7 @@ static void ObjDelete(CGObject_C* object) {
     ClearMirrorLists(object);
 
     ObjectMgr* mgr = s_curMgr;
-    ModCore::ModManager::Get().OnObjectDestroy(object->m_obj->m_guid.m_guid, object->m_typeId, object);
+    ModCore::Manager().OnObjectDestroy(object->m_obj->m_guid.m_guid, object->m_typeId, object);
     mgr->m_objects.Unlink(object);
 
     CHashKeyGUID key = object->m_key;

@@ -93,7 +93,7 @@ static int32_t Script_SendChatMessage(lua_State* L) {
         target = lua_tolstring(L, 4, nullptr);
     }
 
-    if (ModCore::ModManager::Get().OnSendChatMessage(text, type, language, target ? target : "")) {
+    if (ModCore::Manager().OnSendChatMessage(text, type, language, target ? target : "")) {
         return 0;
     }
 

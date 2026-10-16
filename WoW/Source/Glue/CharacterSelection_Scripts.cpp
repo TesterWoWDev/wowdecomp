@@ -336,7 +336,7 @@ static int32_t Script_SelectCharacter(lua_State* L) {
     CCharacterSelection::s_selectionIndex = index;
     CCharacterSelection::ShowCharacter();
     FrameScript_SignalEvent(GLUE_EVENT_UPDATE_SELECTED_CHARACTER, "%d", CCharacterSelection::s_selectionIndex + 1);
-    ModCore::ModManager::Get().OnCharacterSelect(index);
+    ModCore::Manager().OnCharacterSelect(index);
     return 0;
 }
 

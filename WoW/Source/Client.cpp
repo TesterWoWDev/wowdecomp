@@ -508,7 +508,7 @@ void ZoneDebugDestroy() {
 // VERIFY: a6d33d4d auto
 // OFFSET: 0x00402910
 static void WowClientDestroy() {
-    ModCore::ModManager::Get().Shutdown();
+    ModCore::Manager().Shutdown();
     ValidateNameDestroy();
     DeclinedWordsDestroy();
     SpellVisualsShutdown();
@@ -1037,7 +1037,7 @@ static void InitializeClient() {
     GxuLightInitialize();
     GxuLightSetGridSize(16.665001f);
     InputControlInitialize();
-    ModCore::ModManager::Get().Initialize();
+    ModCore::Manager().Initialize();
     CGlueMgr::Initialize();
 
     if (GetConsoleMessage()) {
@@ -1310,7 +1310,7 @@ void ClientInitializeGame(uint32_t mapId, C3Vector position) {
     MovementInit();
     EventRegister(EVENT_ID_IDLE, ClientIdle);
     ClientInitializeGameTime();
-    ModCore::ModManager::Get().DispatchHook("OnGameInitialize");
+    ModCore::Manager().DispatchHook("OnGameInitialize");
 
     CommandManager* manager = StaticSingleton<CommandManager>::Instance();
     manager->m_connection = ClientServices::Connection();
@@ -1601,7 +1601,7 @@ void ClientDestroyGame(int32_t charSelect, int32_t resumeGlue, int32_t worldLogi
     WeaponTrailsShutdown();
     PlayerNameShutdown();
     WorldTextShutdown();
-    ModCore::ModManager::Get().DispatchHook("OnGameDestroy");
+    ModCore::Manager().DispatchHook("OnGameDestroy");
     CGGameUI::ShutdownGame();
     ClientDestroyGameTime();
     SI2::ShutdownZoneSoundsHandler();

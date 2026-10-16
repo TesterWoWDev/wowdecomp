@@ -2192,7 +2192,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
         this->RunScript(this->m_onTooltipSetUnit, 0, nullptr);
     }
 
-    ModCore::ModManager::Get().OnTooltipSetUnit(this, guid.m_guid);
+    ModCore::Manager().OnTooltipSetUnit(this, guid.m_guid);
 
     this->Show();
     return result;
@@ -3305,7 +3305,7 @@ int32_t CGTooltip::SetSpell(int32_t spellId, int32_t brief, uint32_t cooldown, i
         if (spell.m_description && *spell.m_description) {
             SpellParserParseText(&spell, description, sizeof(description), isPet, isInspect, 0, 0, 1, 0);
             std::string evaluatedText;
-            if (ModCore::ModManager::Get().OnTooltipEvaluate(spell.m_id, player, description, evaluatedText)) {
+            if (ModCore::Manager().OnTooltipEvaluate(spell.m_id, player, description, evaluatedText)) {
                 this->AddLine(evaluatedText.c_str(), nullptr, titleColor, titleColor, 1);
             } else {
                 this->AddLine(description, nullptr, titleColor, titleColor, 1);
@@ -3328,7 +3328,7 @@ int32_t CGTooltip::SetSpell(int32_t spellId, int32_t brief, uint32_t cooldown, i
         this->RunScript(this->m_onTooltipSetSpell, 0, nullptr);
     }
 
-    ModCore::ModManager::Get().OnTooltipSetSpell(this, spellId);
+    ModCore::Manager().OnTooltipSetSpell(this, spellId);
 
     this->Show();
     this->CalculateSize();
@@ -6664,7 +6664,7 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
         this->RunScript(this->m_onTooltipSetItem, 0, nullptr);
     }
 
-    ModCore::ModManager::Get().OnTooltipSetItem(this, itemId);
+    ModCore::Manager().OnTooltipSetItem(this, itemId);
 
     this->Show();
     this->CalculateSize();
