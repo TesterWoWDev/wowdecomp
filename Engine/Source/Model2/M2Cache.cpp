@@ -444,3 +444,11 @@ CM2Cache::CM2Cache() : m_threadStart(0, 0), m_threadDone(0, 0) {
     this->unused_101C[0] = '\0';
     this->unused_105C[0] = '\0';
 }
+
+void M2CacheInvalidate() {
+    s_cache.ClearSharedHash();
+}
+
+void M2CachePurge() {
+    s_cache.GarbageCollect(1);
+}

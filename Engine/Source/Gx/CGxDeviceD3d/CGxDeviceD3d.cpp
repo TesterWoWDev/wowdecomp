@@ -87,6 +87,18 @@ static D3DLIGHT9 s_d3dLight;
 // STATIC: 0x00C60760
 static int32_t s_isIdent;
 
+static TSGrowableArray<CGxDeviceD3d::GxDrawIndexedPrimitiveCallback> s_drawIndexedPrimitiveCallbacks;
+
+void CGxDeviceD3d::RegisterDrawIndexedPrimitiveCallback(GxDrawIndexedPrimitiveCallback callback) {
+    if (callback) {
+        *s_drawIndexedPrimitiveCallbacks.New() = callback;
+    }
+}
+
+TSGrowableArray<CGxDeviceD3d::GxDrawIndexedPrimitiveCallback>& CGxDeviceD3d::GetDrawIndexedPrimitiveCallbacks() {
+    return s_drawIndexedPrimitiveCallbacks;
+}
+
 // VERIFY: 271a03c4 manual
 // OFFSET: 0x0068FA60
 void CGxDeviceD3d::IBufUnlock(CGxBuf* buf) {
@@ -3296,6 +3308,9 @@ void CGxDeviceD3d::Draw(CGxBatch* batch, int32_t count) {
 
     if (count) {
         uint32_t primCount = this->PrimCalcCount(batch->m_primType, batch->m_count);
+        for (uint32_t i = 0; i < s_drawIndexedPrimitiveCallbacks.Count(); i++) {
+            s_drawIndexedPrimitiveCallbacks[i](this->m_d3dDevice, s_primitiveConversion[batch->m_primType], baseVertexIndex, batch->m_minIndex, batch->m_maxIndex - batch->m_minIndex + 1, batch->m_start + (this->m_primIndexBuf->m_index >> 1), primCount);
+        }
         this->m_d3dDevice->DrawIndexedPrimitive(s_primitiveConversion[batch->m_primType], baseVertexIndex, batch->m_minIndex, batch->m_maxIndex - batch->m_minIndex + 1, batch->m_start + (this->m_primIndexBuf->m_index >> 1), primCount);
     } else {
         uint32_t primCount = this->PrimCalcCount(batch->m_primType, batch->m_count);

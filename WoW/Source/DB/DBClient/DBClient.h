@@ -495,6 +495,7 @@ void ClientDBInitialize();
 void ClientDBShutdown();
 void GameTablesInitialize();
 void InitLights(bool transform);
+void TransformLightMapCoord(LightRec* rec, bool transform);
 void InitResistances();
 void InitTerrainTypeFlags();
 void InitWeaponSubclasses();

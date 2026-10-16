@@ -26,6 +26,21 @@ const uint32_t s_fogModes[7] = { 1, 1, 1, 2, 2, 3, 4 };
 // STATIC: 0x00AF58A8
 static C44Matrix s_identity;
 
+static TSGrowableArray<CM2SceneRender::DrawBatchCallback> s_drawBatchBeginCallbacks;
+static TSGrowableArray<CM2SceneRender::DrawBatchCallback> s_drawBatchEndCallbacks;
+
+void CM2SceneRender::RegisterDrawBatchBegin(DrawBatchCallback callback) {
+    if (callback) {
+        *s_drawBatchBeginCallbacks.New() = callback;
+    }
+}
+
+void CM2SceneRender::RegisterDrawBatchEnd(DrawBatchCallback callback) {
+    if (callback) {
+        *s_drawBatchEndCallbacks.New() = callback;
+    }
+}
+
 // VERIFY: 6a3520ef manual
 // OFFSET: 0x0081F330
 CM2SceneRender::CM2SceneRender(CM2Scene* scene) {
@@ -414,6 +429,10 @@ void CM2SceneRender::SetupMaterial() {
 // VERIFY: aeedaf63 manual
 // OFFSET: 0x008203B0
 void CM2SceneRender::DrawBatch() {
+    for (uint32_t i = 0; i < s_drawBatchBeginCallbacks.Count(); i++) {
+        s_drawBatchBeginCallbacks[i](this->m_curModel);
+    }
+
     DebugLog("Batch: model=%s index=%d", this->m_curModel->m_shared->m_fileNameWithoutPath, this->m_curElement->m_index);
 
     M2Element* element = this->m_curElement;
@@ -488,6 +507,10 @@ void CM2SceneRender::DrawBatch() {
         batch.m_minIndex = 0;
         batch.m_maxIndex = this->m_curSkinSection->m_vertexCount - 1;
         g_theGxDevicePtr->Draw(&batch, 1);
+    }
+
+    for (uint32_t i = 0; i < s_drawBatchEndCallbacks.Count(); i++) {
+        s_drawBatchEndCallbacks[i](this->m_curModel);
     }
 }
 

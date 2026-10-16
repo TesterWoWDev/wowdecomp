@@ -57,6 +57,10 @@ class CM2SceneRender {
     static void EndFixed();
     static int32_t LightingColorsMatch(const CM2Lighting* a, const CM2Lighting* b);
 
+    typedef void (*DrawBatchCallback)(CM2Model* model);
+    static void RegisterDrawBatchBegin(DrawBatchCallback callback);
+    static void RegisterDrawBatchEnd(DrawBatchCallback callback);
+
     CM2SceneRender(CM2Scene* scene);
     void BeginFixed(const C3Vector& position);
     void Draw(M2PASS pass, M2Element* elements, uint32_t* indices, uint32_t count);

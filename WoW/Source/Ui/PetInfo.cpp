@@ -24,6 +24,7 @@
 #include "WoW/Source/Object/ObjectClient/VehiclePassenger_C.h"
 #include "WoW/Source/Ui/StableInfo.h"
 #include "WoW/Source/WorldClient/FrameTime.h"
+#include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
 
 // STATIC: 0x00C234DC
 int32_t CGPetInfo::m_attackingTarget;
@@ -364,13 +365,15 @@ int32_t Packet_Group_7(void* param, NETMESSAGE msgId, uint32_t time, CDataStore*
             SpellRec spell;
 
             if (g_spellDB.GetRecord(spellId, &spell)) {
-                if (*spell.m_nameSubtext) {
-                    SStrPrintf(name, sizeof(name), "%s (%s)", spell.m_name, spell.m_nameSubtext);
-                } else {
-                    SStrCopy(name, spell.m_name, sizeof(name));
-                }
+                if (!Duskhaven::HasAttribute(spellId, Duskhaven::SPELL_ATTR2_CU_SUPPRESS_LEARN_MSG)) {
+                    if (*spell.m_nameSubtext) {
+                        SStrPrintf(name, sizeof(name), "%s (%s)", spell.m_name, spell.m_nameSubtext);
+                    } else {
+                        SStrCopy(name, spell.m_name, sizeof(name));
+                    }
 
-                CGGameUI::DisplayError(static_cast<UIErrors>(ERR_PET_LEARN_SPELL_S + ((spell.m_attributes & 0x10) != 0)), name);
+                    CGGameUI::DisplayError(static_cast<UIErrors>(ERR_PET_LEARN_SPELL_S + ((spell.m_attributes & 0x10) != 0)), name);
+                }
             }
 
             break;
@@ -381,13 +384,15 @@ int32_t Packet_Group_7(void* param, NETMESSAGE msgId, uint32_t time, CDataStore*
             SpellRec spell;
 
             if (g_spellDB.GetRecord(spellId, &spell)) {
-                if (*spell.m_nameSubtext) {
-                    SStrPrintf(name, sizeof(name), "%s (%s)", spell.m_name, spell.m_nameSubtext);
-                } else {
-                    SStrCopy(name, spell.m_name, sizeof(name));
-                }
+                if (!Duskhaven::HasAttribute(spellId, Duskhaven::SPELL_ATTR2_CU_SUPPRESS_UNLEARN_MSG)) {
+                    if (*spell.m_nameSubtext) {
+                        SStrPrintf(name, sizeof(name), "%s (%s)", spell.m_name, spell.m_nameSubtext);
+                    } else {
+                        SStrCopy(name, spell.m_name, sizeof(name));
+                    }
 
-                CGGameUI::DisplayError(ERR_PET_SPELL_UNLEARNED_S, name);
+                    CGGameUI::DisplayError(ERR_PET_SPELL_UNLEARNED_S, name);
+                }
             }
 
             break;

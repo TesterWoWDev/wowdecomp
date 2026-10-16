@@ -3,6 +3,8 @@
 #include "Engine/Source/Tempest/C3Vector.h"
 #include "WoW/Source/Object/WGUID.h"
 
+#include "QuatMath.h"
+
 class CGGameObject_C;
 
 namespace Duskhaven
@@ -19,5 +21,6 @@ namespace Duskhaven
         const WOWGUID& GetSelectedGameObjectGuid();
 
         bool TraceGround(const C3Vector& position, C3Vector& out);
+        bool FindGroundAlignedRotation(CGGameObject_C* gameObject, const C3Vector& groundPosition, float sampleRadius, Quat& out);
     } // namespace Housing
 } // namespace Duskhaven

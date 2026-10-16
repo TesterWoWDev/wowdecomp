@@ -12,6 +12,7 @@
 #include "Engine/Source/Tempest/CRandom.h"
 #include "WoW/Common/ComponentCore/CharacterComponent.h"
 #include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
+#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 #include "WoW/Source/Client.h"
 #include "WoW/Source/DB/DBClient/DBCacheInstances.h"
 #include "WoW/Source/DB/DBClient/DBClient.h"
@@ -43,6 +44,7 @@
 #include "WoW/Source/Object/ItemStats.h"
 #include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
 #include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalAttributes.h"
+#include "WoW/Source/Duskhaven/DBC/Defs/SpellEffect.h"
 #include "WoW/Source/Object/ObjectClient/Effect_C.h"
 #include "WoW/Source/Object/ObjectClient/GameObject_C.h"
 #include "WoW/Source/Object/ObjectClient/Item_C.h"
@@ -2621,7 +2623,40 @@ bool CGPlayer_C::CanTrackUnit(const CGUnit_C* unit) {
 
     int32_t creatureType = unit->GetCreatureType();
 
-    return creatureType && (this->GetCreatureTracking() & (1 << (creatureType - 1)));
+    if (creatureType && (this->GetCreatureTracking() & (1 << (creatureType - 1)))) {
+        return true;
+    }
+
+    constexpr uint32_t SPELL_AURA_TRACK_SKINNABLE_CREATURES = 357;
+    constexpr uint32_t UNIT_FLAG_SKINNABLE = 0x04000000;
+    constexpr uint32_t UNIT_FLAG2_HAS_SKINNING_LOOT = 0x00080000;
+
+    if (creatureType > 0 && ((unit->m_unit->m_unitFieldFlags & UNIT_FLAG_SKINNABLE) || (unit->m_unit->m_unitFieldFlags2 & UNIT_FLAG2_HAS_SKINNING_LOOT))) {
+        uint32_t auraCount = this->GetAuraCount();
+        for (uint32_t i = 0; i < auraCount; ++i) {
+            AuraData* aura = const_cast<CGPlayer_C*>(this)->GetAura(i);
+            if (!aura || !aura->m_spellId) {
+                continue;
+            }
+            SpellRec spell;
+            if (!g_spellDB.GetRecord(aura->m_spellId, &spell)) {
+                continue;
+            }
+            for (uint32_t eff = 0; eff < 3; ++eff) {
+                if (spell.m_effectAura[eff] == SPELL_AURA_TRACK_SKINNABLE_CREATURES) {
+                    return true;
+                }
+            }
+            for (uint32_t eff = 0; eff < 32; ++eff) {
+                auto* customEffect = SpellEffectCacheDB::Get(SpellEffectCacheKey(spell.m_id, eff));
+                if (customEffect && customEffect->effectApplyAuraName == SPELL_AURA_TRACK_SKINNABLE_CREATURES) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 // VERIFY: 1b989ff9 manual
@@ -4699,6 +4734,17 @@ int32_t CGPlayer_C::GetLanguageSkill(uint32_t language, uint32_t& skill) {
                 if (spell.m_effectAura[j] == 244 && spell.m_effectMiscValue[j] == static_cast<int32_t>(language)) {
                     skill = 300;
                     return 1;
+                }
+            }
+
+            if (LocalSpellData::HasExtendedEffects(this->m_auras[i].m_spellId)) {
+                for (uint32_t effectIndex = 3; effectIndex < 32; ++effectIndex) {
+                    const SpellEffectCacheRow* effect = nullptr;
+                    if (LocalSpellData::TryGetSpellEffect(this->m_auras[i].m_spellId, effectIndex, effect) && effect && effect->effect &&
+                        effect->effectApplyAuraName == 244 && effect->effectMiscValue == static_cast<int32_t>(language)) {
+                        skill = 300;
+                        return 1;
+                    }
                 }
             }
         }
@@ -7079,6 +7125,16 @@ float CGPlayer_C::GetQuestXPMultiplier() {
             if (spell.m_effectAura[j] == 291) {
                 multiplier = (spell.m_effectBasePoints[j] + 1) * 0.0099999998f + multiplier;
             }
+        }
+
+        if (LocalSpellData::HasExtendedEffects(spell.m_id)) {
+            LocalSpellData::ForEachSpellEffect(spell.m_id, [&](const SpellEffectCacheRow& effect) {
+                if (effect.effectIndex < 3) return true;
+                if (effect.effectApplyAuraName == 291) {
+                    multiplier = (effect.effectBasePoints + 1) * 0.0099999998f + multiplier;
+                }
+                return true;
+            });
         }
     }
 

@@ -78,6 +78,7 @@
 #include "WoW/Source/Duskhaven/DBC/Defs/SpellAdditionalCostData.h"
 #include "WoW/Source/Duskhaven/Spells/SpellCustomAttributes.h"
 #include "WoW/Source/Duskhaven/Tooltip/SpellTooltipExtensions.h"
+#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 #include <cstdio>
 #include <cstdlib>
 #include "Engine/Source/Frame/CBackdropGenerator.h"
@@ -7487,14 +7488,28 @@ void CGTooltip::AddSkinnableText(CGUnit_C* unit, char* buffer, uint32_t size) {
         SpellRec spell;
         g_spellDB.GetRecord(skinningSpell, &spell);
 
+        int32_t effectIndex = -1;
         for (uint32_t i = 0; i < 3; i++) {
-            if (spell.m_effect[i] != 95) {
-                continue;
+            if (spell.m_effect[i] == 95) {
+                effectIndex = static_cast<int32_t>(i);
+                break;
             }
+        }
 
+        if (effectIndex == -1) {
+            for (uint32_t i = 3; i < 32; i++) {
+                const SpellEffectCacheRow* effect = nullptr;
+                if (LocalSpellData::TryGetSpellEffect(spell.m_id, i, effect) && effect->effect == 95) {
+                    effectIndex = static_cast<int32_t>(i);
+                    break;
+                }
+            }
+        }
+
+        if (effectIndex != -1) {
             int32_t skill;
             int32_t maxSkill;
-            Spell_C_GetMinMaxPoints(&spell, i, &skill, &maxSkill, 0, 0, 0, 0);
+            Spell_C_GetMinMaxPoints(&spell, effectIndex, &skill, &maxSkill, 0, 0, 0, 0);
 
             if (skill > 0) {
                 int32_t level = unit->m_unit->m_unitFieldLevel;
@@ -7510,8 +7525,6 @@ void CGTooltip::AddSkinnableText(CGUnit_C* unit, char* buffer, uint32_t size) {
 
                 color = *GetSkillColor(required, skill, &suffix);
             }
-
-            break;
         }
     }
 

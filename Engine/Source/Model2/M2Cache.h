@@ -62,5 +62,7 @@ uint32_t M2GetCacheFlags();
 void M2Initialize(uint32_t flags, uint32_t modelCount);
 void M2SetCacheFlags(uint32_t flags);
 void M2SetGlobalOptFlags(uint32_t flags);
+void M2CacheInvalidate();
+void M2CachePurge();
 
 #endif

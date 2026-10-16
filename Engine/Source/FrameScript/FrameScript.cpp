@@ -1623,3 +1623,33 @@ void FrameScript_CreateEvents(const char** names, uint32_t count) {
         }
     }
 }
+
+int32_t FrameScript_GetEventIndex(const char* name) {
+    if (!name || !*name) {
+        return -1;
+    }
+
+    FrameScript_EventObject* target = s_scriptEventsHash.Ptr(name);
+    if (!target) {
+        return -1;
+    }
+
+    for (uint32_t i = 0; i < s_scriptEvents.Count(); i++) {
+        if (s_scriptEvents[i] == target) {
+            return static_cast<int32_t>(i);
+        }
+    }
+
+    return -1;
+}
+
+void FrameScript_SignalEventByName(const char* name) {
+    int32_t index = FrameScript_GetEventIndex(name);
+    if (index >= 0) {
+        lua_State* L = FrameScript_GetContext();
+        lua_pushstring(L, name);
+        FrameScript_SignalEvent(static_cast<uint32_t>(index), L, 1);
+        lua_pop(L, 1);
+    }
+}
+

@@ -78,5 +78,7 @@ void FrameScript_UnregisterFunction(const char* name);
 void FrameScript_UnregisterScriptEvent(FrameScript_Object* object, FrameScript_EventObject* event);
 void SetDecimalConversion(int32_t convert);
 void vFrameScript_SignalEvent(uint32_t index, const char* format, va_list args);
+int32_t FrameScript_GetEventIndex(const char* name);
+void FrameScript_SignalEventByName(const char* name);
 
 #endif

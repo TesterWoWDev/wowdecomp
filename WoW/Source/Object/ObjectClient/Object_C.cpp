@@ -1,4 +1,5 @@
 #include "Object_C.h"
+#include "WoW/Source/Duskhaven/Highlight/NPCHighlight/NPCHighlight.h"
 #include "Engine/Source/Gx/Gx.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
 #include "WoW/Source/Game/GameClient/ProjectTex.h"
@@ -978,6 +979,10 @@ int32_t CGObject_C::GetQuestGiverCursor(int32_t highlighted) {
 void CGObject_C::HideHighlightType(int32_t type) {
     this->m_modelFlags &= ~(1 << (type + 24));
 
+    if (type == 1) {
+        Duskhaven::Highlight::NPCHighlight::UntrackHoveredObject(this);
+    }
+
     if (s_highlightedObjectGuid == this->m_obj->m_guid) {
         s_highlightedObjectGuid = WOWGUID();
     }
@@ -1217,6 +1222,10 @@ void CGObject_C::SetTypeID(OBJECT_TYPE_ID typeId) {
 // OFFSET: 0x00743C70
 void CGObject_C::ShowHighlightType(int32_t type) {
     this->m_modelFlags |= 1 << (type + 24);
+
+    if (type == 1) {
+        Duskhaven::Highlight::NPCHighlight::TrackHoveredObject(this);
+    }
 
     if (this->IsHighlightSuppressed()) {
         return;

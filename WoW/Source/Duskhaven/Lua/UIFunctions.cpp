@@ -508,6 +508,16 @@ namespace Duskhaven
             return 0;
         }
 
+        static int Script_EmitFrameEventByName(lua_State* L)
+        {
+            std::string eventName = ClientLua::GetString(L, 1, "");
+            if (!eventName.empty())
+            {
+                FrameScript_SignalEventByName(eventName.c_str());
+            }
+            return 0;
+        }
+
         void RegisterUIFunctions()
         {
             ClientLua::AddFunction("FireActionBarSlotUpdateEvent", Script_FireActionBarSlotUpdateEvent);
@@ -520,6 +530,7 @@ namespace Duskhaven
             ClientLua::AddFunction("GetFrameChildClipping", Script_GetFrameChildClipping);
             ClientLua::AddFunction("SetTextureWithMask", Script_SetTextureWithMask);
             ClientLua::AddFunction("SetPortraitToTexture", Script_SetPortraitToTexture);
+            ClientLua::AddFunction("EmitFrameEventByName", Script_EmitFrameEventByName);
         }
     } // namespace Lua
 } // namespace Duskhaven

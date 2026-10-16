@@ -15,11 +15,17 @@
 #include "WoW/Source/Duskhaven/Character/VisibleItemOverrides.h"
 #include "WoW/Source/Duskhaven/Housing/HousingManager.h"
 #include "WoW/Source/Duskhaven/Spells/DangerZoneVisuals.h"
+#include "WoW/Source/Duskhaven/Spells/LocalSpellData.h"
 #include "WoW/Source/Duskhaven/Spells/ScriptedMissileVisuals.h"
 #include "WoW/Source/Duskhaven/Spells/SpellTargeting.h"
 #include "WoW/Source/Duskhaven/Spells/WeaponTrailPlayback.h"
 #include "WoW/Source/Duskhaven/Display/GxMonitor.h"
 #include "WoW/Source/Duskhaven/IPC/DiscordPresenceIPC.h"
+#include "WoW/Source/Duskhaven/Camera/WorldSpace.h"
+#include "WoW/Source/Duskhaven/FileIntegrity/FileIntegrity.h"
+#include "WoW/Source/Duskhaven/Highlight/Highlight.h"
+#include "WoW/Source/Duskhaven/Editor/EditorRuntime.h"
+#include "WoW/Source/Duskhaven/Streaming/ContentStreaming.h"
 #include "WoW/Source/Ui/GameUI.h"
 #include "Engine/Source/Event/Types.h"
 
@@ -48,6 +54,15 @@ namespace Duskhaven
         // 7. Network
         Network::Initialize();
 
+        // 8. Visual Highlights & Outlines
+        Highlight::Initialize();
+
+        // 9. In-Game 3D Gizmo & Transform Editor
+        Editor::EditorRuntime::Apply();
+
+        // 10. Live Content Streaming & Auto-Patching
+        ContentStreaming::Initialize();
+
         Lifecycle::DispatchEngineInitialize();
     }
 
@@ -58,11 +73,13 @@ namespace Duskhaven
 
     void OnGameInitialize(uint32_t mapId, const C3Vector& position)
     {
+        Editor::EditorRuntime::OnGameClientInitialize();
         Lifecycle::DispatchGameInitialize(mapId, position);
     }
 
     void OnGameDestroy()
     {
+        Editor::EditorRuntime::OnGameClientDestroy();
         OnSpellDestroy();
         Lifecycle::DispatchGameDestroy();
     }
@@ -80,6 +97,8 @@ namespace Duskhaven
 
     void OnWorldUpdate()
     {
+        ContentStreaming::PumpMountQueue();
+        LocalSpellData::PumpExtendedLanguageRefresh();
         DangerZoneVisuals::Pump();
         ScriptedMissileVisuals::Pump();
         Lifecycle::DispatchWorldUpdate();
@@ -88,6 +107,8 @@ namespace Duskhaven
     void OnWorldRender(CGWorldFrame* worldFrame)
     {
         WeaponTrailPlayback::OnWorldRender(worldFrame);
+        Highlight::OnWorldRender();
+        Editor::EditorRuntime::OnWorldRender(worldFrame);
         Lifecycle::DispatchWorldRender(worldFrame);
     }
 
@@ -147,6 +168,18 @@ namespace Duskhaven
             return true;
         }
 
+        if (msgId == 0x7A50)
+        {
+            ContentStreaming::Trigger(false);
+            return true;
+        }
+
+        if (msgId == 0x7A51)
+        {
+            ContentStreaming::Trigger(true);
+            return true;
+        }
+
         return Lifecycle::DispatchPacketReceived(msgId, time, msg);
     }
 
@@ -164,6 +197,9 @@ namespace Duskhaven
         Lua::RegisterCharCreateFunctions();
         Lua::RegisterEmbeddedScripts();
         GxMonitor::RegisterLuaFunctions();
+        WorldSpace::RegisterLuaFunctions();
+        FileIntegrity::RegisterLuaFunctions();
+        ContentStreaming::RegisterLuaFunctions();
 
         Lifecycle::DispatchRegisterScriptFunctions();
     }

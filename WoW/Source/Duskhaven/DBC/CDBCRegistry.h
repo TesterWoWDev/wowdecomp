@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
 struct lua_State;
 
@@ -22,6 +23,7 @@ public:
 
     static bool IsLoaded(const char* name);
     static std::size_t Count();
+    static std::string PendingCompatibilityError() { return ""; }
 
 private:
     static void RegisterLuaApi();

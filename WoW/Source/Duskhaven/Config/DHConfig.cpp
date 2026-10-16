@@ -369,6 +369,7 @@ static int Script_DHConfigHas(lua_State* L)
 void DHConfig::RegisterLuaFunctions()
 {
     FrameScript_RegisterFunction("DHConfigReadString", Script_DHConfigReadString);
+    FrameScript_RegisterFunction("DHConfigRead", Script_DHConfigReadString);
     FrameScript_RegisterFunction("DHConfigReadInt", Script_DHConfigReadInt);
     FrameScript_RegisterFunction("DHConfigReadFloat", Script_DHConfigReadFloat);
     FrameScript_RegisterFunction("DHConfigWrite", Script_DHConfigWrite);

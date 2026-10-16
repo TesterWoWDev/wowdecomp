@@ -104,15 +104,23 @@ namespace Duskhaven
             }
 
             float const zOffset = static_cast<float>(ClientLua::GetNumber(L, 1, 0.0));
+            float const sampleRadius = static_cast<float>(ClientLua::GetNumber(L, 2, 1.0));
             C3Vector curPos = gob->GetPosition();
-            C3Vector groundPos{};
-            if (!Housing::TraceGround(curPos, groundPos))
+            C3Vector rawGroundPos{};
+            if (!Housing::TraceGround(curPos, rawGroundPos))
             {
                 ClientLua::PushBoolean(L, 0);
                 return 1;
             }
 
-            groundPos.z += zOffset;
+            Housing::Quat groundAlignedRotation{};
+            if (Housing::FindGroundAlignedRotation(gob, rawGroundPos, sampleRadius, groundAlignedRotation))
+            {
+                reinterpret_cast<C4QuaternionCompressed*>(&gob->m_passenger.m_facing)->m_packed =
+                    static_cast<int64_t>(Housing::PackQuat(groundAlignedRotation));
+            }
+
+            C3Vector groundPos = {rawGroundPos.x, rawGroundPos.y, rawGroundPos.z + zOffset};
             gob->m_passenger.m_position = groundPos;
             gob->UpdateWorldObject(0);
 

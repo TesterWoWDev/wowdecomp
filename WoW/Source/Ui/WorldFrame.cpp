@@ -30,6 +30,7 @@
 #include "Engine/Source/Tempest/CImVector.h"
 #include "WoW/Source/Duskhaven/Duskhaven.h"
 #include "WoW/Source/Duskhaven/CVars/DuskhavenCVars.h"
+#include "WoW/Source/Duskhaven/Highlight/TargetSelection.h"
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "WoW/Common/TextureCache.h"
 #include "WoW/Source/Client.h"
@@ -533,11 +534,16 @@ void CGWorldFrame::SetCameraTarget(CGObject_C* target, int32_t freeLook) {
 // VERIFY: 412d637a manual
 // OFFSET: 0x004F6F90
 void CGWorldFrame::ClearTrackedObjects() {
+    bool selfRendered = false;
+
     if (this->m_trackedEffectGuidA) {
         CGObject_C* object = ClntObjMgrObjectPtr(this->m_trackedEffectGuidA, TYPEMASK_OBJECT, __FILE__, __LINE__);
 
         if (object) {
             object->RenderTargetSelection();
+            if (this->m_trackedEffectGuidA == ClntObjMgrGetActivePlayer()) {
+                selfRendered = true;
+            }
         }
 
         this->m_trackedEffectGuidA = WOWGUID();
@@ -551,6 +557,10 @@ void CGWorldFrame::ClearTrackedObjects() {
         }
 
         this->m_trackedEffectGuidB = WOWGUID();
+    }
+
+    if (!selfRendered && Duskhaven::Highlight::TargetSelection::ShouldRenderActivePlayerCircle()) {
+        Duskhaven::Highlight::TargetSelection::RenderActivePlayerCircle();
     }
 }
 

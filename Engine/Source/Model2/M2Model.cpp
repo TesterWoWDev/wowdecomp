@@ -1097,41 +1097,37 @@ int32_t CM2Model::HasSequence(uint32_t id) {
 // VERIFY: cf5b210a auto
 // OFFSET: 0x00825F40
 uint32_t CM2Model::ResolveSequenceFallback(uint32_t id) {
-    if (id >= ANIM_COUNT) {
-        return 0xFFFFFFFF;
-    }
-
     if (!(this->m_fFlags & 1)) {
         this->WaitForLoad(nullptr);
     }
 
-    int32_t visited[ANIM_COUNT];
-    memset(visited, 0, sizeof(visited));
-
     M2Data* data = this->m_shared->m_data;
+    if (!data) {
+        return 0xFFFFFFFF;
+    }
 
     if (this->HasSequence(data, id)) {
         return id;
     }
 
-    while (id < ANIM_COUNT) {
-        AnimationDataRec* rec = g_animationDataDB.GetRecord(id);
+    uint32_t currentId = id;
+    int32_t maxDepth = 32;
 
-        if (visited[id] || !rec) {
+    while (maxDepth-- > 0) {
+        AnimationDataRec* rec = g_animationDataDB.GetRecord(currentId);
+        if (!rec) {
             break;
         }
 
         uint32_t fallback = rec->m_fallback;
-
-        if (id == fallback) {
+        if (currentId == fallback || fallback == 0xFFFFFFFF) {
             break;
         }
 
-        visited[id] = 1;
-        id = fallback;
+        currentId = fallback;
 
         if (this->HasSequence(data, fallback)) {
-            return id;
+            return currentId;
         }
     }
 
@@ -1141,10 +1137,6 @@ uint32_t CM2Model::ResolveSequenceFallback(uint32_t id) {
 // VERIFY: af94bf41 manual
 // OFFSET: 0x00826050
 int32_t CM2Model::IsSequenceLoaded(uint32_t id) {
-    if (id >= 506) {
-        return 0;
-    }
-
     if (!(this->m_fFlags & 1)) {
         this->WaitForLoad(nullptr);
     }
@@ -1271,26 +1263,23 @@ M2SequenceFallback* CM2Model::SequenceFallbackById(M2SequenceFallback* result, u
         defaultId = data->m_sequences[0].m_id;
     }
 
-    int32_t visited[ANIM_COUNT];
-    memset(visited, 0, sizeof(visited));
-
     int32_t direction = 1;
     int32_t reversals = 0;
 
     if (!this->HasSequence(data, id)) {
         uint32_t fallback;
+        int32_t maxDepth = 32;
 
         do {
             AnimationDataRec* rec = g_animationDataDB.GetRecord(id);
 
-            if (id >= ANIM_COUNT || visited[id] || !rec || id == (fallback = rec->m_fallback)) {
+            if (!rec || id == (fallback = rec->m_fallback) || fallback == 0xFFFFFFFF || maxDepth-- <= 0) {
                 result->m_id = defaultId;
                 result->m_mode = 0;
                 return result;
             }
 
             int32_t flags = rec->m_flags;
-            visited[id] = 1;
             id = fallback;
 
             if (flags & 0x10) {

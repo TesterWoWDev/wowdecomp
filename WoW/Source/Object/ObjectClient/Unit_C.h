@@ -475,6 +475,13 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     float GetDistanceToPos(const C3Vector& pos) const;
     VehicleRec* GetVehicleRec() const;
     bool ShouldPreventMeleeUnsheath() const;
+    bool ShouldRouteMovingChannelToUpperSlot(uint32_t animationId) const;
+    void StabilizeChannelLowerBodyAnimation();
+    int32_t ResolveChannelLowerBodyAnimation(uint32_t animationFlags, int32_t resolveFlags, bool allowAirborne);
+    void HandleFallLandChannelAnimation();
+    static bool IsChannelCastAnim(uint32_t animationId);
+    static bool IsAirborneAnim(uint32_t animationId);
+    static int32_t GetMonkUnarmedAttackAnimation(uint32_t animationId);
     uint32_t GetAuraCount() const;
     int32_t GetAuraSpellId(uint32_t index);
     int32_t IsMounted() const;

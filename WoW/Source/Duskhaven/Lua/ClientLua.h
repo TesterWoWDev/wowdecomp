@@ -189,4 +189,10 @@ namespace ClientLua
     {
         return FrameScript_GetContext();
     }
+
+    inline bool DoString(const char* str, const char* chunkName = nullptr)
+    {
+        FrameScript_Execute(str, chunkName ? chunkName : "ClientLua", nullptr);
+        return true;
+    }
 }

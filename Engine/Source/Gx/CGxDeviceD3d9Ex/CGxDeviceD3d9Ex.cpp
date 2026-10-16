@@ -4,6 +4,7 @@
 #include <malloc.h>
 #include <new>
 #include "Engine/Source/Gx/CGxDeviceD3d9Ex/CGxDeviceD3d9Ex.h"
+#include "Engine/Source/Gx/CGxDeviceD3d/CGxDeviceD3d.h"
 #include "Engine/Source/Gx/Blit.h"
 #include "Engine/Source/Gx/CGxBuf.h"
 #include "Engine/Source/Gx/CGxPool.h"
@@ -3097,6 +3098,10 @@ void CGxDeviceD3d9Ex::Draw(CGxBatch* batch, int32_t count) {
 
     if (count) {
         uint32_t primCount = this->PrimCalcCount(batch->m_primType, batch->m_count);
+        auto& callbacks = CGxDeviceD3d::GetDrawIndexedPrimitiveCallbacks();
+        for (uint32_t i = 0; i < callbacks.Count(); i++) {
+            callbacks[i](this->m_d3dDevice, s_primitiveConversion[batch->m_primType], baseVertexIndex, batch->m_minIndex, batch->m_maxIndex - batch->m_minIndex + 1, batch->m_start + (this->m_primIndexBuf->m_index >> 1), primCount);
+        }
         this->m_d3dDevice->DrawIndexedPrimitive(s_primitiveConversion[batch->m_primType], baseVertexIndex, batch->m_minIndex, batch->m_maxIndex - batch->m_minIndex + 1, batch->m_start + (this->m_primIndexBuf->m_index >> 1), primCount);
     } else {
         uint32_t primCount = this->PrimCalcCount(batch->m_primType, batch->m_count);

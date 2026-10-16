@@ -51,6 +51,7 @@
 #include "WoW/Source/Glue/CWOWClientStatus.h"
 #include "WoW/Source/Glue/GlueMgr.h"
 #include "WoW/Source/Glue/RealmList.h"
+#include "WoW/Source/Duskhaven/Streaming/ContentStreaming.h"
 #include "WoW/Source/LoadingScreen.h"
 #include "WoW/Source/Net/Types.h"
 #include "WoW/Source/SoundInterface/SoundInterface2.h"
@@ -1086,6 +1087,12 @@ void CGlueMgr::Initialize() {
 // VERIFY: 5e7db3b8 manual
 // OFFSET: 0x004DAB40
 int32_t CGlueMgr::Idle(const void* data, void* param) {
+    struct GlueIdleGuard {
+        ~GlueIdleGuard() {
+            Duskhaven::ContentStreaming::OnGlueIdle();
+        }
+    } idleGuard;
+
     if (g_theGxDevicePtr->StereoEnabled()) {
         CGlueMgr::SetUIDepth(g_theGxDevicePtr->StereoGetConvergence());
     }

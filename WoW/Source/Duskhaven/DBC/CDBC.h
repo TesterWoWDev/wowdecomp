@@ -21,6 +21,7 @@ public:
     bool LoadDB(const char* name);
     void UnloadDB();
     void ComputeIndexRange();
+    static std::string PendingCompatibilityError() { return ""; }
 
 private:
     bool isLoaded = false;

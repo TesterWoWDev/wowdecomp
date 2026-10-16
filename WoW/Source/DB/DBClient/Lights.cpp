@@ -110,6 +110,12 @@ void InitLights(bool transform) {
     TransformLights(transform);
 }
 
+void TransformLightMapCoord(LightRec* rec, bool transform) {
+    if (rec) {
+        TransformMapCoord(rec, transform);
+    }
+}
+
 // VERIFY: b70039a6 auto
 // OFFSET: 0x007EBF30
 CImVector DayNight::LoadLightIntBand(int32_t time, const LightParamsRec* params, int32_t band) {

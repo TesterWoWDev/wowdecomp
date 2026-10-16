@@ -325,6 +325,10 @@ class CGxDeviceD3d : public CGxDevice {
     static void IUnloadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d);
     static LRESULT CALLBACK WindowProcD3d(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
+    typedef void (*GxDrawIndexedPrimitiveCallback)(IDirect3DDevice9* device, D3DPRIMITIVETYPE type, INT baseVertexIndex, UINT minVertexIndex, UINT numVertices, UINT startIndex, UINT primCount);
+    static void RegisterDrawIndexedPrimitiveCallback(GxDrawIndexedPrimitiveCallback callback);
+    static TSGrowableArray<GxDrawIndexedPrimitiveCallback>& GetDrawIndexedPrimitiveCallbacks();
+
     CGxDeviceD3d();
     virtual ~CGxDeviceD3d();
     void DsSet(EDeviceState state, uint32_t value);
