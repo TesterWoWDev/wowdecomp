@@ -28,32 +28,30 @@ float MsdfComputeScreenPxRange(uint32_t renderedPixelSize) {
 }
 
 static void CalculateYOffset(uint32_t pixelSize, int32_t baseline, FT_Face face, uint32_t glyphHeight, int32_t* yOffset, uint32_t* yStart) {
+    if (glyphHeight > pixelSize) {
+        glyphHeight = pixelSize;
+    }
     int32_t offset = 0;
-    int32_t start;
+    int32_t start = 0;
 
-    if (glyphHeight <= pixelSize) {
-        int32_t top = face->glyph->bitmap_top;
-
-        if (top <= baseline) {
-            start = baseline - top;
-        } else {
-            start = 0;
-            offset = top - baseline;
-        }
+    int32_t top = face->glyph->bitmap_top;
+    if (top <= baseline) {
+        start = baseline - top;
     } else {
         start = 0;
+        offset = top - baseline;
     }
 
     start = start <= 0 ? 0 : start;
-
-    int32_t available = pixelSize - glyphHeight;
+    int32_t available = static_cast<int32_t>(pixelSize) - static_cast<int32_t>(glyphHeight);
 
     if (available >= start) {
         *yOffset = offset;
-        *yStart = start;
+        *yStart = static_cast<uint32_t>(start);
     } else {
-        *yOffset = pixelSize - start - glyphHeight;
-        *yStart = pixelSize - glyphHeight;
+        int32_t s = available <= 0 ? 0 : available;
+        *yOffset = static_cast<int32_t>(pixelSize) - start - static_cast<int32_t>(glyphHeight);
+        *yStart = static_cast<uint32_t>(s);
     }
 }
 
@@ -67,7 +65,7 @@ bool MsdfGenerateGlyph(FT_Face face, uint32_t pixelSize, uint32_t code, uint32_t
         return false;
     }
 
-    if (FT_Load_Glyph(face, index, FT_LOAD_LINEAR_DESIGN | FT_LOAD_PEDANTIC | FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING)) {
+    if (FT_Load_Glyph(face, index, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING)) {
         return false;
     }
 
@@ -127,21 +125,42 @@ bool MsdfGenerateGlyph(FT_Face face, uint32_t pixelSize, uint32_t code, uint32_t
     // Outline coordinates in `shape` are in pixels (1/64 FreeType units).
     // The bottom-left of FreeType's bitmap is at:
     //   x = face->glyph->bitmap_left
-    //   y = face->glyph->bitmap_top - height
-    // msdfgen projection maps shape coords (x, y) to bitmap pixel coords:
-    //   u = scale.x * (x + translate.x)
-    //   v = scale.y * (y + translate.y)
-    // We add `pad` to translation so the glyph contour is centered inside
-    // the padded bitmap, providing distance field margin for the outline.
+    //   y = face->glyph->bitmap_top - face->glyph->bitmap.rows
+    msdfgen::Shape::Bounds bounds = shape.getBounds();
+    double shapeW = bounds.r - bounds.l;
+    double shapeH = bounds.t - bounds.b;
+
     double translateX = -static_cast<double>(face->glyph->bitmap_left) + static_cast<double>(pad);
-    double translateY = -static_cast<double>(face->glyph->bitmap_top - static_cast<int32_t>(height)) + static_cast<double>(pad);
+    double translateY = -static_cast<double>(face->glyph->bitmap_top - static_cast<int32_t>(face->glyph->bitmap.rows)) + static_cast<double>(pad);
+
+    // Keep contour points at least minMargin inside the bitmap boundaries to prevent clipping
+    double minMargin = 0.2;
+    double scale = 1.0;
+    double usableW = static_cast<double>(msdfWidth) - 2.0 * minMargin;
+    double usableH = static_cast<double>(msdfHeight) - 2.0 * minMargin;
+    if (usableW > 0.0 && usableH > 0.0 && (shapeW > usableW || shapeH > usableH)) {
+        scale = std::min(usableW / shapeW, usableH / shapeH);
+    }
+
+    if (bounds.r * scale + translateX > static_cast<double>(msdfWidth) - minMargin) {
+        translateX = (static_cast<double>(msdfWidth) - minMargin) - bounds.r * scale;
+    }
+    if (bounds.l * scale + translateX < minMargin) {
+        translateX = minMargin - bounds.l * scale;
+    }
+    if (bounds.t * scale + translateY > static_cast<double>(msdfHeight) - minMargin) {
+        translateY = (static_cast<double>(msdfHeight) - minMargin) - bounds.t * scale;
+    }
+    if (bounds.b * scale + translateY < minMargin) {
+        translateY = minMargin - bounds.b * scale;
+    }
 
     msdfgen::Bitmap<float, 3> msdf(msdfWidth, msdfHeight);
-    msdfgen::Projection projection(msdfgen::Vector2(1.0, 1.0), msdfgen::Vector2(translateX, translateY));
+    msdfgen::Projection projection(msdfgen::Vector2(scale, scale), msdfgen::Vector2(translateX / scale, translateY / scale));
     msdfgen::MSDFGeneratorConfig config(true);
     config.overlapSupport = true;
     config.errorCorrection.distanceCheckMode = msdfgen::ErrorCorrectionConfig::DO_NOT_CHECK_DISTANCE;
-    msdfgen::generateMSDF(msdf, shape, projection, msdfgen::Range(MSDF_PIXEL_RANGE), config);
+    msdfgen::generateMSDF(msdf, shape, projection, msdfgen::Range(MSDF_PIXEL_RANGE / scale), config);
 
     uint32_t pitch = msdfWidth * 3;
     uint32_t size = pitch * msdfHeight;
@@ -182,7 +201,7 @@ bool MsdfGenerateGlyph(FT_Face face, uint32_t pixelSize, uint32_t code, uint32_t
 #include <windows.h>
 #include <d3dcommon.h>
 
-// Embedded HLSL MSDF pixel shader source with outline support
+// Embedded HLSL MSDF pixel shader source with outline support, screen-space derivatives, and stroke preservation bias
 static const char* s_msdfPixelShaderHlsl =
     "sampler2D s0 : register(s0);\n"
     "float4 u_outlineParams : register(c0);\n"
@@ -191,18 +210,30 @@ static const char* s_msdfPixelShaderHlsl =
     "}\n"
     "float4 main(float4 color : COLOR0, float2 texcoord : TEXCOORD0) : COLOR0 {\n"
     "    float3 sampleRgb = tex2D(s0, texcoord).rgb;\n"
-    "    float dist = median(sampleRgb.r, sampleRgb.g, sampleRgb.b) - 0.5f;\n"
-    "    float w = max(fwidth(dist), 0.0001f);\n"
+    "    float sd = median(sampleRgb.r, sampleRgb.g, sampleRgb.b);\n"
+    "    float hasGlyph = step(0.005f, sd);\n"
+    "    float2 unitRange = float2(3.0f / 512.0f, 3.0f / 512.0f);\n"
+    "    float2 screenTexSize = 1.0f / max(fwidth(texcoord), 1e-6f);\n"
+    "    float screenPxRange = max(0.5f * dot(unitRange, screenTexSize), 1.0f);\n"
+    "    float fontSize = (u_outlineParams.y > 1.0f) ? u_outlineParams.y : 12.0f;\n"
+    "    float screenFontSize = fontSize * (screenPxRange / 3.0f);\n"
+    "    float smoothing = 1.0f - min(0.3f, screenFontSize * 0.0035f);\n"
+    "    screenPxRange *= smoothing;\n"
+    "    float strokeWeight = saturate((sd - 0.2f) * 5.0f);\n"
+    "    float bias = (screenFontSize < 14.0f) ? (14.0f - screenFontSize) * 0.012f : 0.0f;\n"
+    "    float effectiveBias = bias * strokeWeight;\n"
+    "    float edgeFade = saturate(sd * 8.0f) * hasGlyph;\n"
+    "    float dist = sd - 0.5f + effectiveBias;\n"
     "    float outlineWidth = u_outlineParams.x;\n"
-    "    float fillAlpha = saturate(dist / w + 0.5f);\n"
-    "    float outlineAlpha = saturate((dist + outlineWidth * w) / w + 0.5f);\n"
+    "    float fillAlpha = saturate(dist * screenPxRange + 0.5f) * edgeFade;\n"
+    "    float outlineAlpha = saturate(dist * screenPxRange + outlineWidth + 0.5f) * edgeFade;\n"
     "    float hasOutline = step(0.001f, outlineWidth);\n"
     "    float3 rgb = lerp(color.rgb, color.rgb * fillAlpha, hasOutline);\n"
     "    float alpha = lerp(fillAlpha, outlineAlpha, hasOutline);\n"
     "    return float4(rgb, color.a * alpha);\n"
     "}\n";
 
-// Precompiled ps_2_a fallback bytecode for the above HLSL shader (548 bytes)
+// Precompiled ps_2_a fallback bytecode for the above HLSL shader (1024 bytes)
 static const uint8_t s_msdfPs2aBytecode[] = {
       1,   2, 255, 255, 254, 255,  43,   0,  67,  84,  65,  66, 
      28,   0,   0,   0, 127,   0,   0,   0,   1,   2, 255, 255, 
@@ -219,40 +250,76 @@ static const uint8_t s_msdfPs2aBytecode[] = {
     115, 111, 102, 116,  32,  40,  82,  41,  32,  72,  76,  83, 
      76,  32,  83, 104,  97, 100, 101, 114,  32,  67, 111, 109, 
     112, 105, 108, 101, 114,  32,  49,  48,  46,  49,   0, 171, 
-     81,   0,   0,   5,   1,   0,  15, 160,   0,   0,   0, 191, 
-     23, 183, 209,  56,   0,   0,   0,  63, 111,  18, 131, 186, 
+     81,   0,   0,   5,   1,   0,  15, 160, 189,  55, 134,  53, 
+      0,   0, 192,  59,   0,   0,   0,   0,   0,   0,   0,  63, 
+     81,   0,   0,   5,   2,   0,  15, 160,   0,   0, 128,  63, 
+      0,   0,  64,  65, 215, 234, 152,  58, 171, 170, 170,  62, 
+     81,   0,   0,   5,   3,   0,  15, 160, 154, 153, 153,  62, 
+      0,   0, 128,  63,   0,   0,  96,  65,  51,  51,  51,  63, 
+     81,   0,   0,   5,   4,   0,  15, 160,  10, 215, 163, 187, 
+    205, 204,  76, 190,   0,   0, 160,  64, 166, 155,  68,  60, 
+     81,   0,   0,   5,   5,   0,  15, 160, 171, 170, 170,  62, 
+      0,   0,  96, 193,   0,   0,   0,  65, 111,  18, 131, 186, 
      31,   0,   0,   2,   0,   0,   0, 128,   0,   0,  15, 144, 
      31,   0,   0,   2,   0,   0,   0, 128,   0,   0,   3, 176, 
      31,   0,   0,   2,   0,   0,   0, 144,   0,   8,  15, 160, 
-     66,   0,   0,   3,   0,   0,  15, 128,   0,   0, 228, 176, 
-      0,   8, 228, 160,   2,   0,   0,   3,   0,   0,   8, 128, 
-      0,   0,  85, 129,   0,   0,   0, 128,  88,   0,   0,   4, 
-      0,   0,   3, 128,   0,   0, 255, 128,   0,   0, 225, 128, 
-      0,   0, 228, 128,  10,   0,   0,   3,   1,   0,   8, 128, 
-      0,   0, 170, 128,   0,   0,  85, 128,  11,   0,   0,   3, 
-      2,   0,   8, 128,   0,   0,   0, 128,   1,   0, 255, 128, 
-      2,   0,   0,   3,   0,   0,   1, 128,   2,   0, 255, 128, 
-      1,   0,   0, 160,  91,   0,   0,   2,   0,   0,   2, 128, 
-      0,   0,   0, 128,  92,   0,   0,   2,   0,   0,   4, 128, 
-      0,   0,   0, 128,  35,   0,   0,   2,   0,   0,   6, 128, 
-      0,   0, 228, 128,   2,   0,   0,   3,   0,   0,   2, 128, 
-      0,   0, 170, 128,   0,   0,  85, 128,  11,   0,   0,   3, 
-      1,   0,   1, 128,   0,   0,  85, 128,   1,   0,  85, 160, 
-      4,   0,   0,   4,   0,   0,   2, 128,   0,   0,   0, 160, 
-      1,   0,   0, 128,   0,   0,   0, 128,   6,   0,   0,   2, 
-      0,   0,   4, 128,   1,   0,   0, 128,   4,   0,   0,   4, 
-      0,   0,  17, 128,   0,   0,   0, 128,   0,   0, 170, 128, 
-      1,   0, 170, 160,   4,   0,   0,   4,   0,   0,  18, 128, 
-      0,   0,  85, 128,   0,   0, 170, 128,   1,   0, 170, 160, 
-      1,   0,   0,   2,   0,   0,   8, 128,   1,   0, 255, 160, 
-      2,   0,   0,   3,   0,   0,   4, 128,   0,   0, 255, 128, 
-      0,   0,   0, 160,  88,   0,   0,   4,   0,   0,   2, 128, 
-      0,   0, 170, 128,   0,   0,  85, 128,   0,   0,   0, 128, 
-      5,   0,   0,   3,   1,   0,   7, 128,   0,   0,   0, 128, 
-      0,   0, 228, 144,  88,   0,   0,   4,   1,   0,   7, 128, 
-      0,   0, 170, 128,   1,   0, 228, 128,   0,   0, 228, 144, 
-      5,   0,   0,   3,   1,   0,   8, 128,   0,   0,  85, 128, 
-      0,   0, 255, 144,   1,   0,   0,   2,   0,   8,  15, 128, 
+     91,   0,   0,   2,   0,   0,   3, 128,   0,   0, 228, 176, 
+     92,   0,   0,   2,   0,   0,  12, 128,   0,   0,  68, 176, 
+     35,   0,   0,   2,   0,   0,  15, 128,   0,   0, 228, 128, 
+      2,   0,   0,   3,   0,   0,   3, 128,   0,   0, 238, 128, 
+      0,   0, 228, 128,  11,   0,   0,   3,   1,   0,   3, 128, 
+      0,   0, 228, 128,   1,   0,   0, 160,   6,   0,   0,   2, 
+      0,   0,   1, 128,   1,   0,   0, 128,   6,   0,   0,   2, 
+      0,   0,   2, 128,   1,   0,  85, 128,  90,   0,   0,   4, 
+      0,   0,   1, 128,   1,   0,  85, 160,   0,   0, 228, 128, 
+      1,   0, 170, 160,   5,   0,   0,   3,   0,   0,   1, 128, 
+      0,   0,   0, 128,   1,   0, 255, 160,  11,   0,   0,   3, 
+      1,   0,   1, 128,   0,   0,   0, 128,   2,   0,   0, 160, 
+      1,   0,   0,   2,   0,   0,  15, 128,   2,   0, 228, 160, 
+      2,   0,   0,   3,   0,   0,   1, 128,   0,   0,   0, 128, 
+      0,   0,  85, 161,  88,   0,   0,   4,   0,   0,   1, 128, 
+      0,   0,   0, 128,   0,   0,  85, 128,   0,   0,  85, 160, 
+      5,   0,   0,   3,   0,   0,   1, 128,   0,   0,   0, 128, 
+      1,   0,   0, 128,   4,   0,   0,   4,   0,   0,   2, 128, 
+      0,   0,   0, 128,   5,   0,   0, 160,   5,   0,  85, 160, 
+      4,   0,   0,   4,   0,   0,  13, 128,   0,   0,   0, 128, 
+      0,   0, 230, 129,   3,   0, 148, 160,  66,   0,   0,   3, 
+      2,   0,  15, 128,   0,   0, 228, 176,   0,   8, 228, 160, 
+      2,   0,   0,   3,   2,   0,   8, 128,   2,   0,  85, 129, 
+      2,   0,   0, 128,  88,   0,   0,   4,   1,   0,   6, 128, 
+      2,   0, 255, 128,   2,   0, 196, 128,   2,   0, 208, 128, 
+     10,   0,   0,   3,   3,   0,   8, 128,   2,   0, 170, 128, 
+      1,   0, 170, 128,  11,   0,   0,   3,   2,   0,   1, 128, 
+      1,   0,  85, 128,   3,   0, 255, 128,   2,   0,   0,   3, 
+      1,   0,   6, 128,   2,   0,   0, 128,   4,   0, 208, 160, 
+      5,   0,   0,   3,   1,   0,  20, 128,   1,   0, 170, 128, 
+      4,   0, 170, 160,   5,   0,   0,   3,   0,   0,   8, 128, 
+      0,   0, 255, 128,   1,   0, 170, 128,  88,   0,   0,   4, 
+      0,   0,   1, 128,   0,   0,   0, 128,   0,   0, 170, 128, 
+      3,   0, 255, 160,   5,   0,   0,   3,   0,   0,   1, 128, 
+      0,   0,   0, 128,   1,   0,   0, 128,   5,   0,   0,   3, 
+      0,   0,   4, 128,   0,   0, 255, 128,   4,   0, 255, 160, 
+     88,   0,   0,   4,   0,   0,   2, 128,   0,   0,  85, 128, 
+      1,   0, 170, 160,   0,   0, 170, 128,   2,   0,   0,   3, 
+      0,   0,   2, 128,   0,   0,  85, 128,   2,   0,   0, 128, 
+      5,   0,   0,   3,   0,   0,  20, 128,   2,   0,   0, 128, 
+      5,   0, 170, 160,  88,   0,   0,   4,   0,   0,   4, 128, 
+      1,   0,  85, 128,   0,   0, 170, 128,   1,   0, 170, 160, 
+      2,   0,   0,   3,   0,   0,   2, 128,   0,   0,  85, 128, 
+      1,   0, 255, 161,   4,   0,   0,   4,   0,   0,   8, 128, 
+      0,   0,  85, 128,   0,   0,   0, 128,   0,   0,   0, 160, 
+      4,   0,   0,   4,   0,   0,  17, 128,   0,   0,  85, 128, 
+      0,   0,   0, 128,   1,   0, 255, 160,   2,   0,   0,   3, 
+      0,   0,  18, 128,   0,   0, 255, 128,   1,   0, 255, 160, 
+      5,   0,   0,   3,   0,   0,   3, 128,   0,   0, 170, 128, 
+      0,   0, 228, 128,   1,   0,   0,   2,   1,   0,   1, 128, 
+      0,   0,   0, 160,   2,   0,   0,   3,   0,   0,   4, 128, 
+      1,   0,   0, 128,   5,   0, 255, 160,  88,   0,   0,   4, 
+      0,   0,   2, 128,   0,   0, 170, 128,   0,   0,  85, 128, 
+      0,   0,   0, 128,   5,   0,   0,   3,   1,   0,  15, 128, 
+      0,   0,  64, 128,   0,   0, 228, 144,  88,   0,   0,   4, 
+      1,   0,   7, 128,   0,   0, 170, 128,   1,   0, 228, 128, 
+      0,   0, 228, 144,   1,   0,   0,   2,   0,   8,  15, 128, 
       1,   0, 228, 128, 255, 255,   0,   0
 };
 

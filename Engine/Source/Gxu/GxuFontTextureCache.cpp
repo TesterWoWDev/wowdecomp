@@ -346,6 +346,10 @@ void TEXTURECACHE::PasteGlyphMsdf(const GLYPHBITMAPDATA& data, uint32_t* dest) {
     uint32_t atlasSize = this->m_atlasSize ? this->m_atlasSize : 512;
     uint32_t cellHeight = this->m_theFace->m_cellHeight;
 
+    if (data.m_yStart >= atlasSize) {
+        return;
+    }
+
     // Advance dest by yStart rows within the glyph cell
     dest += (data.m_yStart * atlasSize);
 

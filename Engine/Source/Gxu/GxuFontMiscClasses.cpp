@@ -583,7 +583,8 @@ void CGxStringBatch::RenderBatch() {
                             outlineWidth = 1.0f;
                         }
                     }
-                    float params[4] = { outlineWidth, 0.0f, 0.0f, 0.0f };
+                    float fontSize = desc->m_face ? static_cast<float>(desc->m_face->m_pixelSize) : 12.0f;
+                    float params[4] = { outlineWidth, fontSize, 0.0f, 0.0f };
                     GxShaderConstantsSet(GxSh_Pixel, 0, params, 1);
                 }
             }
