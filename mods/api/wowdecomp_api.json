@@ -13,8 +13,16 @@
           "description": "Logs a debug message to client console",
           "returnType": "void",
           "params": [
-            { "name": "fmt", "type": "string", "description": "Format string" },
-            { "name": "...", "type": "any", "description": "Arguments" }
+            {
+              "name": "fmt",
+              "type": "string",
+              "description": "Format string"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Arguments"
+            }
           ]
         },
         {
@@ -22,8 +30,16 @@
           "description": "Logs an info message to client console",
           "returnType": "void",
           "params": [
-            { "name": "fmt", "type": "string", "description": "Format string" },
-            { "name": "...", "type": "any", "description": "Arguments" }
+            {
+              "name": "fmt",
+              "type": "string",
+              "description": "Format string"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Arguments"
+            }
           ]
         },
         {
@@ -31,8 +47,16 @@
           "description": "Logs a warning message to client console",
           "returnType": "void",
           "params": [
-            { "name": "fmt", "type": "string", "description": "Format string" },
-            { "name": "...", "type": "any", "description": "Arguments" }
+            {
+              "name": "fmt",
+              "type": "string",
+              "description": "Format string"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Arguments"
+            }
           ]
         },
         {
@@ -40,8 +64,16 @@
           "description": "Logs an error message to client console",
           "returnType": "void",
           "params": [
-            { "name": "fmt", "type": "string", "description": "Format string" },
-            { "name": "...", "type": "any", "description": "Arguments" }
+            {
+              "name": "fmt",
+              "type": "string",
+              "description": "Format string"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Arguments"
+            }
           ]
         },
         {
@@ -49,8 +81,16 @@
           "description": "Mounts and initializes an external mod package",
           "returnType": "boolean",
           "params": [
-            { "name": "modDir", "type": "string", "description": "Path" },
-            { "name": "manifest", "type": "table", "description": "Manifest" }
+            {
+              "name": "modDir",
+              "type": "string",
+              "description": "Path"
+            },
+            {
+              "name": "manifest",
+              "type": "table",
+              "description": "Manifest"
+            }
           ]
         },
         {
@@ -58,10 +98,26 @@
           "description": "Registers a callback listener for an engine or gameplay hook",
           "returnType": "void",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "callback", "type": "fun(...): any?", "description": "Listener" },
-            { "name": "priority?", "type": "integer", "description": "Priority (default 100)" },
-            { "name": "doc?", "type": "string", "description": "Documentation" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(...): any?",
+              "description": "Listener"
+            },
+            {
+              "name": "priority?",
+              "type": "integer",
+              "description": "Priority (default 100)"
+            },
+            {
+              "name": "doc?",
+              "type": "string",
+              "description": "Documentation"
+            }
           ]
         },
         {
@@ -69,8 +125,16 @@
           "description": "Unregisters a callback from a hook",
           "returnType": "void",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "callback", "type": "fun(...)", "description": "Listener" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(...)",
+              "description": "Listener"
+            }
           ]
         },
         {
@@ -78,8 +142,16 @@
           "description": "Fires a hook across all listeners and returns early override if non-nil",
           "returnType": "any?",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "...", "type": "any", "description": "Parameters" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Parameters"
+            }
           ]
         },
         {
@@ -87,10 +159,26 @@
           "description": "Event emitter syntax alias for RegisterHook",
           "returnType": "void",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "callback", "type": "fun(...): any?", "description": "Listener" },
-            { "name": "priority?", "type": "integer", "description": "Priority" },
-            { "name": "doc?", "type": "string", "description": "Documentation" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(...): any?",
+              "description": "Listener"
+            },
+            {
+              "name": "priority?",
+              "type": "integer",
+              "description": "Priority"
+            },
+            {
+              "name": "doc?",
+              "type": "string",
+              "description": "Documentation"
+            }
           ]
         },
         {
@@ -98,30 +186,35 @@
           "description": "Direct hook dispatcher invoked by C++ engine",
           "returnType": "any?",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "...", "type": "any", "description": "Parameters" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Parameters"
+            }
           ]
         },
         {
           "name": "GetHookList",
           "description": "Returns array of all registered hook names and metadata",
           "returnType": "table",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetApiSchema",
           "description": "Returns complete machine schema for frontend extension",
           "returnType": "table",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "ExportApi",
           "description": "Triggers immediate autogeneration of all API definitions and schemas",
           "returnType": "boolean",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -134,10 +227,26 @@
           "description": "Registers a callback for an event",
           "returnType": "void",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "callback", "type": "fun(...)", "description": "Function" },
-            { "name": "priority?", "type": "integer", "description": "Priority" },
-            { "name": "doc?", "type": "string", "description": "Doc" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(...)",
+              "description": "Function"
+            },
+            {
+              "name": "priority?",
+              "type": "integer",
+              "description": "Priority"
+            },
+            {
+              "name": "doc?",
+              "type": "string",
+              "description": "Doc"
+            }
           ]
         },
         {
@@ -145,8 +254,16 @@
           "description": "Unregisters a callback",
           "returnType": "void",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "callback", "type": "fun(...)", "description": "Function" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(...)",
+              "description": "Function"
+            }
           ]
         },
         {
@@ -154,8 +271,16 @@
           "description": "Fires hook across listeners",
           "returnType": "any?",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" },
-            { "name": "...", "type": "any", "description": "Args" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            },
+            {
+              "name": "...",
+              "type": "any",
+              "description": "Args"
+            }
           ]
         },
         {
@@ -163,22 +288,24 @@
           "description": "Returns true if any callbacks are registered for hook",
           "returnType": "boolean",
           "params": [
-            { "name": "hookName", "type": "string", "description": "Hook name" }
+            {
+              "name": "hookName",
+              "type": "string",
+              "description": "Hook name"
+            }
           ]
         },
         {
           "name": "GetMetadata",
           "description": "Returns dictionary of hook docstrings",
           "returnType": "table<string, string>",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetHookList",
           "description": "Returns list of all active hook names",
           "returnType": "table<integer, string>",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -191,8 +318,16 @@
           "description": "Defines a typed binary packet schema",
           "returnType": "void",
           "params": [
-            { "name": "name", "type": "string", "description": "Packet identifier" },
-            { "name": "definition", "type": "table", "description": "Opcode and schema" }
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Packet identifier"
+            },
+            {
+              "name": "definition",
+              "type": "table",
+              "description": "Opcode and schema"
+            }
           ]
         },
         {
@@ -200,8 +335,16 @@
           "description": "Constructs and transmits a binary packet to server",
           "returnType": "boolean",
           "params": [
-            { "name": "name", "type": "string", "description": "Packet identifier" },
-            { "name": "data", "type": "table", "description": "Payload" }
+            {
+              "name": "name",
+              "type": "string",
+              "description": "Packet identifier"
+            },
+            {
+              "name": "data",
+              "type": "table",
+              "description": "Payload"
+            }
           ]
         },
         {
@@ -209,8 +352,16 @@
           "description": "Registers a callback for a specific network opcode",
           "returnType": "void",
           "params": [
-            { "name": "opcode", "type": "integer", "description": "Network opcode" },
-            { "name": "handler", "type": "fun(reader: any)", "description": "Handler" }
+            {
+              "name": "opcode",
+              "type": "integer",
+              "description": "Network opcode"
+            },
+            {
+              "name": "handler",
+              "type": "fun(reader: any)",
+              "description": "Handler"
+            }
           ]
         }
       ]
@@ -224,7 +375,11 @@
           "description": "Retrieves a table handle for a loaded DBC",
           "returnType": "table",
           "params": [
-            { "name": "tableName", "type": "string", "description": "DBC name" }
+            {
+              "name": "tableName",
+              "type": "string",
+              "description": "DBC name"
+            }
           ]
         },
         {
@@ -232,9 +387,21 @@
           "description": "Injects an in-memory virtual record into DBC",
           "returnType": "void",
           "params": [
-            { "name": "tableName", "type": "string", "description": "DBC name" },
-            { "name": "id", "type": "integer", "description": "Record ID" },
-            { "name": "data", "type": "table", "description": "Record fields" }
+            {
+              "name": "tableName",
+              "type": "string",
+              "description": "DBC name"
+            },
+            {
+              "name": "id",
+              "type": "integer",
+              "description": "Record ID"
+            },
+            {
+              "name": "data",
+              "type": "table",
+              "description": "Record fields"
+            }
           ]
         },
         {
@@ -242,9 +409,21 @@
           "description": "Overrides specific fields in an existing DBC record",
           "returnType": "void",
           "params": [
-            { "name": "tableName", "type": "string", "description": "DBC name" },
-            { "name": "id", "type": "integer", "description": "Record ID" },
-            { "name": "overrides", "type": "table", "description": "Field overrides" }
+            {
+              "name": "tableName",
+              "type": "string",
+              "description": "DBC name"
+            },
+            {
+              "name": "id",
+              "type": "integer",
+              "description": "Record ID"
+            },
+            {
+              "name": "overrides",
+              "type": "table",
+              "description": "Field overrides"
+            }
           ]
         },
         {
@@ -252,8 +431,16 @@
           "description": "Intercepts runtime DBC row queries",
           "returnType": "void",
           "params": [
-            { "name": "tableName", "type": "string", "description": "DBC name" },
-            { "name": "callback", "type": "fun(id: integer): table?", "description": "Handler" }
+            {
+              "name": "tableName",
+              "type": "string",
+              "description": "DBC name"
+            },
+            {
+              "name": "callback",
+              "type": "fun(id: integer): table?",
+              "description": "Handler"
+            }
           ]
         }
       ]
@@ -267,7 +454,11 @@
           "description": "Emits a ground decal (circle, donut, cone, rect)",
           "returnType": "table",
           "params": [
-            { "name": "params", "type": "table", "description": "Decal parameters" }
+            {
+              "name": "params",
+              "type": "table",
+              "description": "Decal parameters"
+            }
           ]
         },
         {
@@ -275,7 +466,11 @@
           "description": "Attaches a weapon ribbon trail to player/unit model",
           "returnType": "table",
           "params": [
-            { "name": "params", "type": "table", "description": "Trail parameters" }
+            {
+              "name": "params",
+              "type": "table",
+              "description": "Trail parameters"
+            }
           ]
         }
       ]
@@ -283,14 +478,12 @@
     "C3Vector": {
       "description": "3D coordinate vector in World space",
       "parent": "",
-      "methods": [
-      ]
+      "methods": []
     },
     "Quat": {
       "description": "4D quaternion for 3D rotation",
       "parent": "",
-      "methods": [
-      ]
+      "methods": []
     },
     "WOWGUID": {
       "description": "64-bit entity identifier in World of Warcraft",
@@ -300,8 +493,7 @@
           "name": "IsValid",
           "description": "Returns true if GUID is non-zero",
           "returnType": "boolean",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -313,22 +505,19 @@
           "name": "GetGUID",
           "description": "Returns entity GUID",
           "returnType": "WOWGUID",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetPosition",
           "description": "Returns 3D world position",
           "returnType": "C3Vector",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "IsValid",
           "description": "Returns true if entity pointer is valid",
           "returnType": "boolean",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -340,22 +529,24 @@
           "name": "GetHealth",
           "description": "Returns current health",
           "returnType": "integer",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetMaxHealth",
           "description": "Returns maximum health",
           "returnType": "integer",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetPower",
           "description": "Returns current power for type",
           "returnType": "integer",
           "params": [
-            { "name": "powerType", "type": "integer", "description": "Power type" }
+            {
+              "name": "powerType",
+              "type": "integer",
+              "description": "Power type"
+            }
           ]
         },
         {
@@ -363,29 +554,30 @@
           "description": "Returns maximum power for type",
           "returnType": "integer",
           "params": [
-            { "name": "powerType", "type": "integer", "description": "Power type" }
+            {
+              "name": "powerType",
+              "type": "integer",
+              "description": "Power type"
+            }
           ]
         },
         {
           "name": "IsPlayer",
           "description": "Returns true if unit is player character",
           "returnType": "boolean",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "IsFriendly",
           "description": "Returns true if unit is friendly to active player",
           "returnType": "boolean",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetUnitName",
           "description": "Returns unit name string",
           "returnType": "string",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -397,8 +589,7 @@
           "name": "GetTargetGuid",
           "description": "Returns GUID of currently targeted entity",
           "returnType": "WOWGUID",
-          "params": [
-          ]
+          "params": []
         }
       ]
     },
@@ -410,15 +601,18 @@
           "name": "GetActivePlayer",
           "description": "Returns the active player character entity",
           "returnType": "CGPlayer_C",
-          "params": [
-          ]
+          "params": []
         },
         {
           "name": "GetObject",
           "description": "Queries an entity by its GUID",
           "returnType": "CGObject_C?",
           "params": [
-            { "name": "guid", "type": "WOWGUID", "description": "Entity GUID" }
+            {
+              "name": "guid",
+              "type": "WOWGUID",
+              "description": "Entity GUID"
+            }
           ]
         }
       ]
@@ -430,32 +624,28 @@
       "description": "Fired when the client engine completes low-level initialization",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnEngineShutdown": {
       "category": "Lifecycle",
       "description": "Fired when the client engine begins shutdown sequence",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnGameInitialize": {
       "category": "Lifecycle",
       "description": "Fired when CGGameUI initializes the active gameplay world session",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnGameDestroy": {
       "category": "Lifecycle",
       "description": "Fired when CGGameUI shuts down the active gameplay world session",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnFrameTick": {
       "category": "Lifecycle",
@@ -463,7 +653,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "dt", "type": "number", "description": "Delta time in seconds" }
+        {
+          "name": "dt",
+          "type": "number",
+          "description": "Delta time in seconds"
+        }
       ]
     },
     "OnEnterWorld": {
@@ -471,16 +665,14 @@
       "description": "Fired when the player character finishes loading and enters the 3D world",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnLeaveWorld": {
       "category": "World",
       "description": "Fired when the player character leaves the 3D world (logout or disconnect)",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnMapChange": {
       "category": "World",
@@ -488,8 +680,16 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "mapName", "type": "string", "description": "Internal map directory name" },
-        { "name": "zoneId", "type": "integer", "description": "Zone identifier" }
+        {
+          "name": "mapName",
+          "type": "string",
+          "description": "Internal map directory name"
+        },
+        {
+          "name": "zoneId",
+          "type": "integer",
+          "description": "Zone identifier"
+        }
       ]
     },
     "OnWorldUpdate": {
@@ -498,7 +698,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "dt", "type": "number", "description": "Delta time in seconds" }
+        {
+          "name": "dt",
+          "type": "number",
+          "description": "Delta time in seconds"
+        }
       ]
     },
     "OnWorldRender": {
@@ -507,7 +711,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "worldFrame", "type": "any", "description": "Pointer to CGWorldFrame instance" }
+        {
+          "name": "worldFrame",
+          "type": "any",
+          "description": "Pointer to CGWorldFrame instance"
+        }
       ]
     },
     "OnWorldHitTest": {
@@ -516,9 +724,21 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "guid", "type": "number", "description": "64-bit GUID of hit entity" },
-        { "name": "point", "type": "any", "description": "3D hit coordinate" },
-        { "name": "hitObject", "type": "boolean", "description": "True if entity hit" }
+        {
+          "name": "guid",
+          "type": "number",
+          "description": "64-bit GUID of hit entity"
+        },
+        {
+          "name": "point",
+          "type": "any",
+          "description": "3D hit coordinate"
+        },
+        {
+          "name": "hitObject",
+          "type": "boolean",
+          "description": "True if entity hit"
+        }
       ]
     },
     "OnTerrainTrack": {
@@ -527,7 +747,11 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume tracking",
       "params": [
-        { "name": "point", "type": "any", "description": "3D terrain coordinate" }
+        {
+          "name": "point",
+          "type": "any",
+          "description": "3D terrain coordinate"
+        }
       ]
     },
     "OnTerrainClick": {
@@ -536,10 +760,26 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume click",
       "params": [
-        { "name": "button", "type": "integer", "description": "Mouse button index" },
-        { "name": "x", "type": "number", "description": "World X" },
-        { "name": "y", "type": "number", "description": "World Y" },
-        { "name": "z", "type": "number", "description": "World Z" }
+        {
+          "name": "button",
+          "type": "integer",
+          "description": "Mouse button index"
+        },
+        {
+          "name": "x",
+          "type": "number",
+          "description": "World X"
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "description": "World Y"
+        },
+        {
+          "name": "z",
+          "type": "number",
+          "description": "World Z"
+        }
       ]
     },
     "OnGlueResume": {
@@ -547,16 +787,14 @@
       "description": "Fired when GlueXML screen resumes execution",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnGlueIdle": {
       "category": "Glue",
       "description": "Fired each frame while on GlueXML screens",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnGlueScreenChange": {
       "category": "Glue",
@@ -564,7 +802,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "screenName", "type": "string", "description": "Target screen name" }
+        {
+          "name": "screenName",
+          "type": "string",
+          "description": "Target screen name"
+        }
       ]
     },
     "IsLoginBlocked": {
@@ -572,8 +814,7 @@
       "description": "Queried by client before allowing user to login to realm",
       "returnType": "boolean?",
       "returnDoc": "Return true to block login",
-      "params": [
-      ]
+      "params": []
     },
     "OnCharacterSelect": {
       "category": "Glue",
@@ -581,7 +822,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "charIndex", "type": "integer", "description": "Character slot index" }
+        {
+          "name": "charIndex",
+          "type": "integer",
+          "description": "Character slot index"
+        }
       ]
     },
     "OnCharacterCreate": {
@@ -590,10 +835,26 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "name", "type": "string", "description": "Character name" },
-        { "name": "race", "type": "integer", "description": "Race ID" },
-        { "name": "classId", "type": "integer", "description": "Class ID" },
-        { "name": "gender", "type": "integer", "description": "Gender ID" }
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Character name"
+        },
+        {
+          "name": "race",
+          "type": "integer",
+          "description": "Race ID"
+        },
+        {
+          "name": "classId",
+          "type": "integer",
+          "description": "Class ID"
+        },
+        {
+          "name": "gender",
+          "type": "integer",
+          "description": "Gender ID"
+        }
       ]
     },
     "OnPacketReceived": {
@@ -602,9 +863,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to prevent default engine handling",
       "params": [
-        { "name": "opcode", "type": "integer", "description": "Network opcode" },
-        { "name": "time", "type": "integer", "description": "Server packet timestamp" },
-        { "name": "reader", "type": "any", "description": "Packet reader buffer" }
+        {
+          "name": "opcode",
+          "type": "integer",
+          "description": "Network opcode"
+        },
+        {
+          "name": "time",
+          "type": "integer",
+          "description": "Server packet timestamp"
+        },
+        {
+          "name": "reader",
+          "type": "any",
+          "description": "Packet reader buffer"
+        }
       ]
     },
     "OnPacketSend": {
@@ -613,9 +886,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to block transmission",
       "params": [
-        { "name": "opcode", "type": "integer", "description": "Network opcode" },
-        { "name": "size", "type": "integer", "description": "Byte length" },
-        { "name": "dataStore", "type": "any", "description": "Data buffer" }
+        {
+          "name": "opcode",
+          "type": "integer",
+          "description": "Network opcode"
+        },
+        {
+          "name": "size",
+          "type": "integer",
+          "description": "Byte length"
+        },
+        {
+          "name": "dataStore",
+          "type": "any",
+          "description": "Data buffer"
+        }
       ]
     },
     "OnDisconnect": {
@@ -623,8 +908,7 @@
       "description": "Fired when the client network connection disconnects",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnSpellQuery": {
       "category": "Spells",
@@ -632,9 +916,21 @@
       "returnType": "any?",
       "returnDoc": "Return override value or nil for stock DBC calculation",
       "params": [
-        { "name": "queryType", "type": "string", "description": "Query attribute name" },
-        { "name": "spellId", "type": "integer", "description": "Spell ID" },
-        { "name": "caster", "type": "any", "description": "Caster entity pointer" }
+        {
+          "name": "queryType",
+          "type": "string",
+          "description": "Query attribute name"
+        },
+        {
+          "name": "spellId",
+          "type": "integer",
+          "description": "Spell ID"
+        },
+        {
+          "name": "caster",
+          "type": "any",
+          "description": "Caster entity pointer"
+        }
       ]
     },
     "OnSpellCast": {
@@ -643,9 +939,21 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "spellId", "type": "integer", "description": "Spell ID" },
-        { "name": "casterGuid", "type": "number", "description": "Caster GUID" },
-        { "name": "targetGuid", "type": "number", "description": "Target GUID" }
+        {
+          "name": "spellId",
+          "type": "integer",
+          "description": "Spell ID"
+        },
+        {
+          "name": "casterGuid",
+          "type": "number",
+          "description": "Caster GUID"
+        },
+        {
+          "name": "targetGuid",
+          "type": "number",
+          "description": "Target GUID"
+        }
       ]
     },
     "OnChannelStart": {
@@ -654,7 +962,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "msg", "type": "any", "description": "Channel start data packet" }
+        {
+          "name": "msg",
+          "type": "any",
+          "description": "Channel start data packet"
+        }
       ]
     },
     "OnChannelUpdate": {
@@ -663,7 +975,11 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "msg", "type": "any", "description": "Channel update data packet" }
+        {
+          "name": "msg",
+          "type": "any",
+          "description": "Channel update data packet"
+        }
       ]
     },
     "OnChannelStop": {
@@ -671,16 +987,14 @@
       "description": "Fired when a channeled spell finishes or is interrupted",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnSpellDestroy": {
       "category": "Spells",
       "description": "Fired when a client spell instance is destroyed",
       "returnType": "void",
       "returnDoc": "",
-      "params": [
-      ]
+      "params": []
     },
     "OnTooltipEvaluate": {
       "category": "Tooltips",
@@ -688,9 +1002,21 @@
       "returnType": "string?",
       "returnDoc": "Return formatted string to override tooltip text or nil",
       "params": [
-        { "name": "spellId", "type": "integer", "description": "Spell ID" },
-        { "name": "caster", "type": "any", "description": "Caster unit" },
-        { "name": "defaultText", "type": "string", "description": "Parsed DBC tooltip string" }
+        {
+          "name": "spellId",
+          "type": "integer",
+          "description": "Spell ID"
+        },
+        {
+          "name": "caster",
+          "type": "any",
+          "description": "Caster unit"
+        },
+        {
+          "name": "defaultText",
+          "type": "string",
+          "description": "Parsed DBC tooltip string"
+        }
       ]
     },
     "OnTooltipSetSpell": {
@@ -699,8 +1025,16 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "tooltip", "type": "any", "description": "CGTooltip pointer" },
-        { "name": "spellId", "type": "integer", "description": "Spell ID" }
+        {
+          "name": "tooltip",
+          "type": "any",
+          "description": "CGTooltip pointer"
+        },
+        {
+          "name": "spellId",
+          "type": "integer",
+          "description": "Spell ID"
+        }
       ]
     },
     "OnTooltipSetItem": {
@@ -709,8 +1043,16 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "tooltip", "type": "any", "description": "CGTooltip pointer" },
-        { "name": "itemId", "type": "integer", "description": "Item ID" }
+        {
+          "name": "tooltip",
+          "type": "any",
+          "description": "CGTooltip pointer"
+        },
+        {
+          "name": "itemId",
+          "type": "integer",
+          "description": "Item ID"
+        }
       ]
     },
     "OnTooltipSetUnit": {
@@ -719,8 +1061,16 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "tooltip", "type": "any", "description": "CGTooltip pointer" },
-        { "name": "unitGuid", "type": "number", "description": "Unit GUID" }
+        {
+          "name": "tooltip",
+          "type": "any",
+          "description": "CGTooltip pointer"
+        },
+        {
+          "name": "unitGuid",
+          "type": "number",
+          "description": "Unit GUID"
+        }
       ]
     },
     "OnObjectCreate": {
@@ -729,9 +1079,21 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "guid", "type": "number", "description": "Entity GUID" },
-        { "name": "typeId", "type": "integer", "description": "Object type ID" },
-        { "name": "objectPtr", "type": "any", "description": "CGObject_C pointer" }
+        {
+          "name": "guid",
+          "type": "number",
+          "description": "Entity GUID"
+        },
+        {
+          "name": "typeId",
+          "type": "integer",
+          "description": "Object type ID"
+        },
+        {
+          "name": "objectPtr",
+          "type": "any",
+          "description": "CGObject_C pointer"
+        }
       ]
     },
     "OnObjectDestroy": {
@@ -740,9 +1102,21 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "guid", "type": "number", "description": "Entity GUID" },
-        { "name": "typeId", "type": "integer", "description": "Object type ID" },
-        { "name": "objectPtr", "type": "any", "description": "CGObject_C pointer" }
+        {
+          "name": "guid",
+          "type": "number",
+          "description": "Entity GUID"
+        },
+        {
+          "name": "typeId",
+          "type": "integer",
+          "description": "Object type ID"
+        },
+        {
+          "name": "objectPtr",
+          "type": "any",
+          "description": "CGObject_C pointer"
+        }
       ]
     },
     "OnTargetChanged": {
@@ -751,8 +1125,16 @@
       "returnType": "void",
       "returnDoc": "",
       "params": [
-        { "name": "oldGuid", "type": "number", "description": "Previous target GUID" },
-        { "name": "newGuid", "type": "number", "description": "New target GUID" }
+        {
+          "name": "oldGuid",
+          "type": "number",
+          "description": "Previous target GUID"
+        },
+        {
+          "name": "newGuid",
+          "type": "number",
+          "description": "New target GUID"
+        }
       ]
     },
     "OnKeyDown": {
@@ -761,9 +1143,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume input",
       "params": [
-        { "name": "key", "type": "integer", "description": "Engine key code" },
-        { "name": "modifiers", "type": "integer", "description": "Shift/Ctrl/Alt mask" },
-        { "name": "keyString", "type": "string", "description": "Key name" }
+        {
+          "name": "key",
+          "type": "integer",
+          "description": "Engine key code"
+        },
+        {
+          "name": "modifiers",
+          "type": "integer",
+          "description": "Shift/Ctrl/Alt mask"
+        },
+        {
+          "name": "keyString",
+          "type": "string",
+          "description": "Key name"
+        }
       ]
     },
     "OnKeyUp": {
@@ -772,9 +1166,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume input",
       "params": [
-        { "name": "key", "type": "integer", "description": "Engine key code" },
-        { "name": "modifiers", "type": "integer", "description": "Shift/Ctrl/Alt mask" },
-        { "name": "keyString", "type": "string", "description": "Key name" }
+        {
+          "name": "key",
+          "type": "integer",
+          "description": "Engine key code"
+        },
+        {
+          "name": "modifiers",
+          "type": "integer",
+          "description": "Shift/Ctrl/Alt mask"
+        },
+        {
+          "name": "keyString",
+          "type": "string",
+          "description": "Key name"
+        }
       ]
     },
     "OnMouseDown": {
@@ -783,9 +1189,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume input",
       "params": [
-        { "name": "button", "type": "integer", "description": "Button index (0=Left, 1=Right, 2=Middle)" },
-        { "name": "x", "type": "integer", "description": "Screen X" },
-        { "name": "y", "type": "integer", "description": "Screen Y" }
+        {
+          "name": "button",
+          "type": "integer",
+          "description": "Button index (0=Left, 1=Right, 2=Middle)"
+        },
+        {
+          "name": "x",
+          "type": "integer",
+          "description": "Screen X"
+        },
+        {
+          "name": "y",
+          "type": "integer",
+          "description": "Screen Y"
+        }
       ]
     },
     "OnMouseUp": {
@@ -794,9 +1212,21 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume input",
       "params": [
-        { "name": "button", "type": "integer", "description": "Button index (0=Left, 1=Right, 2=Middle)" },
-        { "name": "x", "type": "integer", "description": "Screen X" },
-        { "name": "y", "type": "integer", "description": "Screen Y" }
+        {
+          "name": "button",
+          "type": "integer",
+          "description": "Button index (0=Left, 1=Right, 2=Middle)"
+        },
+        {
+          "name": "x",
+          "type": "integer",
+          "description": "Screen X"
+        },
+        {
+          "name": "y",
+          "type": "integer",
+          "description": "Screen Y"
+        }
       ]
     },
     "OnMouseWheel": {
@@ -805,7 +1235,11 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to consume input",
       "params": [
-        { "name": "delta", "type": "integer", "description": "Scroll ticks (-1 or +1)" }
+        {
+          "name": "delta",
+          "type": "integer",
+          "description": "Scroll ticks (-1 or +1)"
+        }
       ]
     },
     "OnChatMessage": {
@@ -814,10 +1248,26 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to suppress chat message",
       "params": [
-        { "name": "type", "type": "integer", "description": "Chat type ID" },
-        { "name": "sender", "type": "string", "description": "Sender character name" },
-        { "name": "message", "type": "string", "description": "Message text" },
-        { "name": "channel", "type": "string", "description": "Channel name" }
+        {
+          "name": "type",
+          "type": "integer",
+          "description": "Chat type ID"
+        },
+        {
+          "name": "sender",
+          "type": "string",
+          "description": "Sender character name"
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "description": "Message text"
+        },
+        {
+          "name": "channel",
+          "type": "string",
+          "description": "Channel name"
+        }
       ]
     },
     "OnSendChatMessage": {
@@ -826,10 +1276,377 @@
       "returnType": "boolean?",
       "returnDoc": "Return true to block sending",
       "params": [
-        { "name": "message", "type": "string", "description": "Message text" },
-        { "name": "type", "type": "integer", "description": "Chat type" },
-        { "name": "language", "type": "integer", "description": "Language ID" },
-        { "name": "target", "type": "string", "description": "Whisper/channel target" }
+        {
+          "name": "message",
+          "type": "string",
+          "description": "Message text"
+        },
+        {
+          "name": "type",
+          "type": "integer",
+          "description": "Chat type"
+        },
+        {
+          "name": "language",
+          "type": "integer",
+          "description": "Language ID"
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "description": "Whisper/channel target"
+        }
+      ]
+    },
+    "OnWeatherChange": {
+      "category": "Environment",
+      "description": "Fired when weather type or intensity changes in active zone",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "type",
+          "type": "integer",
+          "description": "Weather type ID"
+        },
+        {
+          "name": "intensity",
+          "type": "number",
+          "description": "Weather intensity (0.0 to 1.0)"
+        }
+      ]
+    },
+    "OnZoneChange": {
+      "category": "World",
+      "description": "Fired when player crosses zone or subzone boundary",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "areaId",
+          "type": "integer",
+          "description": "Area ID"
+        },
+        {
+          "name": "subzoneId",
+          "type": "integer",
+          "description": "Subzone ID"
+        },
+        {
+          "name": "zoneName",
+          "type": "string",
+          "description": "Localized or internal zone name"
+        }
+      ]
+    },
+    "OnLootOpen": {
+      "category": "Loot",
+      "description": "Fired when loot window opens for an entity or container",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "guid",
+          "type": "number",
+          "description": "Loot target entity GUID"
+        },
+        {
+          "name": "coins",
+          "type": "integer",
+          "description": "Dropped coin amount in copper"
+        },
+        {
+          "name": "lootType",
+          "type": "integer",
+          "description": "Loot type classification"
+        }
+      ]
+    },
+    "OnLootSlot": {
+      "category": "Loot",
+      "description": "Fired when an item slot is looted from the active loot window",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "slot",
+          "type": "integer",
+          "description": "Loot window slot index (1-based)"
+        }
+      ]
+    },
+    "OnLootClose": {
+      "category": "Loot",
+      "description": "Fired when active loot window is closed",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": []
+    },
+    "OnMerchantBuy": {
+      "category": "Merchant",
+      "description": "Fired when buying an item from an active merchant",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to cancel or prevent purchase",
+      "params": [
+        {
+          "name": "index",
+          "type": "integer",
+          "description": "Merchant item slot index"
+        },
+        {
+          "name": "count",
+          "type": "integer",
+          "description": "Number of items to purchase"
+        }
+      ]
+    },
+    "OnQuestAccept": {
+      "category": "Quests",
+      "description": "Fired when accepting a quest from a quest giver",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to block accepting quest",
+      "params": [
+        {
+          "name": "questGiverGuid",
+          "type": "number",
+          "description": "Quest giver entity GUID"
+        }
+      ]
+    },
+    "OnQuestComplete": {
+      "category": "Quests",
+      "description": "Fired when completing a quest with a quest giver",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to block completing quest",
+      "params": [
+        {
+          "name": "questGiverGuid",
+          "type": "number",
+          "description": "Quest giver entity GUID"
+        }
+      ]
+    },
+    "OnQuestReward": {
+      "category": "Quests",
+      "description": "Fired when selecting and claiming a quest reward",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to block claiming reward",
+      "params": [
+        {
+          "name": "rewardIndex",
+          "type": "integer",
+          "description": "Chosen reward item index"
+        }
+      ]
+    },
+    "OnGossipSelect": {
+      "category": "Quests",
+      "description": "Fired when selecting an option in NPC gossip dialog",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to block gossip option execution",
+      "params": [
+        {
+          "name": "optionIndex",
+          "type": "integer",
+          "description": "Gossip option index"
+        }
+      ]
+    },
+    "OnActionUse": {
+      "category": "ActionBar",
+      "description": "Fired when an action bar button is activated",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to prevent default action execution",
+      "params": [
+        {
+          "name": "slot",
+          "type": "integer",
+          "description": "Action bar slot index (1-120)"
+        }
+      ]
+    },
+    "OnMacroExecute": {
+      "category": "ActionBar",
+      "description": "Fired before executing macro commands or text",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to block macro execution",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Macro name or script identifier"
+        },
+        {
+          "name": "body",
+          "type": "string",
+          "description": "Macro command text lines"
+        }
+      ]
+    },
+    "OnCooldownSet": {
+      "category": "Cooldowns",
+      "description": "Fired when a spell or item cooldown is initialized or refreshed",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Cooldown identifier or spell name"
+        },
+        {
+          "name": "start",
+          "type": "number",
+          "description": "Cooldown start timestamp in seconds"
+        },
+        {
+          "name": "duration",
+          "type": "number",
+          "description": "Cooldown duration in seconds"
+        }
+      ]
+    },
+    "OnPlaySound": {
+      "category": "Sound",
+      "description": "Fired when a sound or sound kit is requested to play",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to mute or cancel sound playback",
+      "params": [
+        {
+          "name": "soundKitId",
+          "type": "integer",
+          "description": "Sound kit ID from SoundEntries DBC"
+        }
+      ]
+    },
+    "OnPlayMusic": {
+      "category": "Sound",
+      "description": "Fired when a music track or file is requested to play",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to cancel or override music playback",
+      "params": [
+        {
+          "name": "musicFile",
+          "type": "string",
+          "description": "Music asset path or file name"
+        }
+      ]
+    },
+    "OnItemUse": {
+      "category": "Items",
+      "description": "Fired when an item in a container or bag is used or activated",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to prevent item usage",
+      "params": [
+        {
+          "name": "bagIndex",
+          "type": "integer",
+          "description": "Bag container index (0-4)"
+        },
+        {
+          "name": "slotIndex",
+          "type": "integer",
+          "description": "Bag slot index"
+        }
+      ]
+    },
+    "OnTradeInitiate": {
+      "category": "Trade",
+      "description": "Fired when a player-to-player trade session is initiated",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "targetGuid",
+          "type": "number",
+          "description": "Trade target character GUID"
+        },
+        {
+          "name": "useCursorItem",
+          "type": "boolean",
+          "description": "True if initiated with an item on the cursor"
+        }
+      ]
+    },
+    "OnTradeAccept": {
+      "category": "Trade",
+      "description": "Fired when player clicks Accept in the trade window",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": []
+    },
+    "OnCombatFeedback": {
+      "category": "Combat",
+      "description": "Fired on combat feedback / floating combat text events (damage, heals, misses)",
+      "returnType": "boolean?",
+      "returnDoc": "Return true to suppress floating combat text",
+      "params": [
+        {
+          "name": "guid",
+          "type": "number",
+          "description": "Target entity GUID"
+        },
+        {
+          "name": "amount",
+          "type": "integer",
+          "description": "Feedback amount or value"
+        },
+        {
+          "name": "schoolMask",
+          "type": "integer",
+          "description": "Damage school bitmask"
+        },
+        {
+          "name": "flags",
+          "type": "integer",
+          "description": "Combat feedback flags"
+        }
+      ]
+    },
+    "OnCameraUpdate": {
+      "category": "Camera",
+      "description": "Fired every frame when active world camera updates position and FOV",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "x",
+          "type": "number",
+          "description": "Camera World X position"
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "description": "Camera World Y position"
+        },
+        {
+          "name": "z",
+          "type": "number",
+          "description": "Camera World Z position"
+        },
+        {
+          "name": "fov",
+          "type": "number",
+          "description": "Field of View in radians"
+        }
+      ]
+    },
+    "OnNamePlateCreate": {
+      "category": "UI",
+      "description": "Fired when a nameplate frame is created or initialized for a unit",
+      "returnType": "void",
+      "returnDoc": "",
+      "params": [
+        {
+          "name": "unitGuid",
+          "type": "number",
+          "description": "Attached unit GUID"
+        },
+        {
+          "name": "namePlatePtr",
+          "type": "any",
+          "description": "Pointer to CGNamePlateFrame instance"
+        }
       ]
     }
   },

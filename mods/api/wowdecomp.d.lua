@@ -50,6 +50,27 @@
 ---@alias HookCallback_OnMouseWheel fun(delta: integer): boolean?
 ---@alias HookCallback_OnChatMessage fun(type: integer, sender: string, message: string, channel: string): boolean?
 ---@alias HookCallback_OnSendChatMessage fun(message: string, type: integer, language: integer, target: string): boolean?
+---@alias HookCallback_OnWeatherChange fun(type: integer, intensity: number): void
+---@alias HookCallback_OnZoneChange fun(areaId: integer, subzoneId: integer, zoneName: string): void
+---@alias HookCallback_OnLootOpen fun(guid: number, coins: integer, lootType: integer): void
+---@alias HookCallback_OnLootSlot fun(slot: integer): void
+---@alias HookCallback_OnLootClose fun(): void
+---@alias HookCallback_OnMerchantBuy fun(index: integer, count: integer): boolean?
+---@alias HookCallback_OnQuestAccept fun(questGiverGuid: number): boolean?
+---@alias HookCallback_OnQuestComplete fun(questGiverGuid: number): boolean?
+---@alias HookCallback_OnQuestReward fun(rewardIndex: integer): boolean?
+---@alias HookCallback_OnGossipSelect fun(optionIndex: integer): boolean?
+---@alias HookCallback_OnActionUse fun(slot: integer): boolean?
+---@alias HookCallback_OnMacroExecute fun(name: string, body: string): boolean?
+---@alias HookCallback_OnCooldownSet fun(name: string, start: number, duration: number): void
+---@alias HookCallback_OnPlaySound fun(soundKitId: integer): boolean?
+---@alias HookCallback_OnPlayMusic fun(musicFile: string): boolean?
+---@alias HookCallback_OnItemUse fun(bagIndex: integer, slotIndex: integer): boolean?
+---@alias HookCallback_OnTradeInitiate fun(targetGuid: number, useCursorItem: boolean): void
+---@alias HookCallback_OnTradeAccept fun(): void
+---@alias HookCallback_OnCombatFeedback fun(guid: number, amount: integer, schoolMask: integer, flags: integer): boolean?
+---@alias HookCallback_OnCameraUpdate fun(x: number, y: number, z: number, fov: number): void
+---@alias HookCallback_OnNamePlateCreate fun(unitGuid: number, namePlatePtr: any): void
 
 -- ------------------------------------------------------------------------------
 -- ModCore
@@ -943,6 +964,300 @@ function ModCore.Hooks.Register(hookName, callback, priority, doc) end
 ---Registers callback for `OnSendChatMessage` (Chat)
 ---@param hookName '"OnSendChatMessage"'
 ---@param callback HookCallback_OnSendChatMessage
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnWeatherChange` (Environment)
+---@param hookName '"OnWeatherChange"'
+---@param callback HookCallback_OnWeatherChange
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnWeatherChange` (Environment)
+---@param hookName '"OnWeatherChange"'
+---@param callback HookCallback_OnWeatherChange
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnZoneChange` (World)
+---@param hookName '"OnZoneChange"'
+---@param callback HookCallback_OnZoneChange
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnZoneChange` (World)
+---@param hookName '"OnZoneChange"'
+---@param callback HookCallback_OnZoneChange
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootOpen` (Loot)
+---@param hookName '"OnLootOpen"'
+---@param callback HookCallback_OnLootOpen
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootOpen` (Loot)
+---@param hookName '"OnLootOpen"'
+---@param callback HookCallback_OnLootOpen
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootSlot` (Loot)
+---@param hookName '"OnLootSlot"'
+---@param callback HookCallback_OnLootSlot
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootSlot` (Loot)
+---@param hookName '"OnLootSlot"'
+---@param callback HookCallback_OnLootSlot
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootClose` (Loot)
+---@param hookName '"OnLootClose"'
+---@param callback HookCallback_OnLootClose
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnLootClose` (Loot)
+---@param hookName '"OnLootClose"'
+---@param callback HookCallback_OnLootClose
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnMerchantBuy` (Merchant)
+---@param hookName '"OnMerchantBuy"'
+---@param callback HookCallback_OnMerchantBuy
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnMerchantBuy` (Merchant)
+---@param hookName '"OnMerchantBuy"'
+---@param callback HookCallback_OnMerchantBuy
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestAccept` (Quests)
+---@param hookName '"OnQuestAccept"'
+---@param callback HookCallback_OnQuestAccept
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestAccept` (Quests)
+---@param hookName '"OnQuestAccept"'
+---@param callback HookCallback_OnQuestAccept
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestComplete` (Quests)
+---@param hookName '"OnQuestComplete"'
+---@param callback HookCallback_OnQuestComplete
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestComplete` (Quests)
+---@param hookName '"OnQuestComplete"'
+---@param callback HookCallback_OnQuestComplete
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestReward` (Quests)
+---@param hookName '"OnQuestReward"'
+---@param callback HookCallback_OnQuestReward
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnQuestReward` (Quests)
+---@param hookName '"OnQuestReward"'
+---@param callback HookCallback_OnQuestReward
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnGossipSelect` (Quests)
+---@param hookName '"OnGossipSelect"'
+---@param callback HookCallback_OnGossipSelect
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnGossipSelect` (Quests)
+---@param hookName '"OnGossipSelect"'
+---@param callback HookCallback_OnGossipSelect
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnActionUse` (ActionBar)
+---@param hookName '"OnActionUse"'
+---@param callback HookCallback_OnActionUse
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnActionUse` (ActionBar)
+---@param hookName '"OnActionUse"'
+---@param callback HookCallback_OnActionUse
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnMacroExecute` (ActionBar)
+---@param hookName '"OnMacroExecute"'
+---@param callback HookCallback_OnMacroExecute
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnMacroExecute` (ActionBar)
+---@param hookName '"OnMacroExecute"'
+---@param callback HookCallback_OnMacroExecute
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCooldownSet` (Cooldowns)
+---@param hookName '"OnCooldownSet"'
+---@param callback HookCallback_OnCooldownSet
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCooldownSet` (Cooldowns)
+---@param hookName '"OnCooldownSet"'
+---@param callback HookCallback_OnCooldownSet
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnPlaySound` (Sound)
+---@param hookName '"OnPlaySound"'
+---@param callback HookCallback_OnPlaySound
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnPlaySound` (Sound)
+---@param hookName '"OnPlaySound"'
+---@param callback HookCallback_OnPlaySound
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnPlayMusic` (Sound)
+---@param hookName '"OnPlayMusic"'
+---@param callback HookCallback_OnPlayMusic
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnPlayMusic` (Sound)
+---@param hookName '"OnPlayMusic"'
+---@param callback HookCallback_OnPlayMusic
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnItemUse` (Items)
+---@param hookName '"OnItemUse"'
+---@param callback HookCallback_OnItemUse
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnItemUse` (Items)
+---@param hookName '"OnItemUse"'
+---@param callback HookCallback_OnItemUse
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnTradeInitiate` (Trade)
+---@param hookName '"OnTradeInitiate"'
+---@param callback HookCallback_OnTradeInitiate
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnTradeInitiate` (Trade)
+---@param hookName '"OnTradeInitiate"'
+---@param callback HookCallback_OnTradeInitiate
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnTradeAccept` (Trade)
+---@param hookName '"OnTradeAccept"'
+---@param callback HookCallback_OnTradeAccept
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnTradeAccept` (Trade)
+---@param hookName '"OnTradeAccept"'
+---@param callback HookCallback_OnTradeAccept
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCombatFeedback` (Combat)
+---@param hookName '"OnCombatFeedback"'
+---@param callback HookCallback_OnCombatFeedback
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCombatFeedback` (Combat)
+---@param hookName '"OnCombatFeedback"'
+---@param callback HookCallback_OnCombatFeedback
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCameraUpdate` (Camera)
+---@param hookName '"OnCameraUpdate"'
+---@param callback HookCallback_OnCameraUpdate
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnCameraUpdate` (Camera)
+---@param hookName '"OnCameraUpdate"'
+---@param callback HookCallback_OnCameraUpdate
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.On(hookName, callback, priority, doc) end
+
+---Registers callback for `OnNamePlateCreate` (UI)
+---@param hookName '"OnNamePlateCreate"'
+---@param callback HookCallback_OnNamePlateCreate
+---@param priority? integer Higher priorities run first (default 100)
+---@param doc? string Optional documentation
+function ModCore.Hooks.Register(hookName, callback, priority, doc) end
+
+---Registers callback for `OnNamePlateCreate` (UI)
+---@param hookName '"OnNamePlateCreate"'
+---@param callback HookCallback_OnNamePlateCreate
 ---@param priority? integer Higher priorities run first (default 100)
 ---@param doc? string Optional documentation
 function ModCore.On(hookName, callback, priority, doc) end

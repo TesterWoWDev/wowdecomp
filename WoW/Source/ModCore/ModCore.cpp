@@ -825,4 +825,287 @@ namespace ModCore
         });
         return consumed;
     }
+
+    // =========================================================================
+    // Environment & Weather Dispatches
+    // =========================================================================
+
+    void ModManager::OnWeatherChange(uint32_t type, float intensity)
+    {
+        DispatchHookEx("OnWeatherChange", [=](lua_State* L) {
+            lua_pushinteger(L, type);
+            lua_pushnumber(L, intensity);
+            return 2;
+        });
+    }
+
+    void ModManager::OnZoneChange(uint32_t areaId, uint32_t subzoneId, const char* zoneName)
+    {
+        DispatchHookEx("OnZoneChange", [=](lua_State* L) {
+            lua_pushinteger(L, areaId);
+            lua_pushinteger(L, subzoneId);
+            lua_pushstring(L, zoneName ? zoneName : "");
+            return 3;
+        });
+    }
+
+    // =========================================================================
+    // Loot Dispatches
+    // =========================================================================
+
+    void ModManager::OnLootOpen(uint64_t guid, int32_t coins, uint32_t lootType)
+    {
+        DispatchHookEx("OnLootOpen", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(guid));
+            lua_pushinteger(L, coins);
+            lua_pushinteger(L, lootType);
+            return 3;
+        });
+    }
+
+    void ModManager::OnLootSlot(uint32_t slot)
+    {
+        DispatchHookEx("OnLootSlot", [=](lua_State* L) {
+            lua_pushinteger(L, slot);
+            return 1;
+        });
+    }
+
+    void ModManager::OnLootClose()
+    {
+        DispatchHook("OnLootClose");
+    }
+
+    // =========================================================================
+    // Merchant Dispatches
+    // =========================================================================
+
+    bool ModManager::OnMerchantBuy(int32_t index, int32_t count)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnMerchantBuy", [=](lua_State* L) {
+            lua_pushinteger(L, index);
+            lua_pushinteger(L, count);
+            return 2;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Quest & Gossip Dispatches
+    // =========================================================================
+
+    bool ModManager::OnQuestAccept(uint64_t questGiverGuid)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnQuestAccept", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(questGiverGuid));
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnQuestComplete(uint64_t questGiverGuid)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnQuestComplete", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(questGiverGuid));
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnQuestReward(int32_t rewardIndex)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnQuestReward", [=](lua_State* L) {
+            lua_pushinteger(L, rewardIndex);
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnGossipSelect(int32_t optionIndex)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnGossipSelect", [=](lua_State* L) {
+            lua_pushinteger(L, optionIndex);
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Action & Macro Dispatches
+    // =========================================================================
+
+    bool ModManager::OnActionUse(int32_t slot)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnActionUse", [=](lua_State* L) {
+            lua_pushinteger(L, slot);
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnMacroExecute(const char* name, const char* body)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnMacroExecute", [=](lua_State* L) {
+            lua_pushstring(L, name ? name : "");
+            lua_pushstring(L, body ? body : "");
+            return 2;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Cooldown Dispatches
+    // =========================================================================
+
+    void ModManager::OnCooldownSet(const char* name, float start, float duration)
+    {
+        DispatchHookEx("OnCooldownSet", [=](lua_State* L) {
+            lua_pushstring(L, name ? name : "");
+            lua_pushnumber(L, start);
+            lua_pushnumber(L, duration);
+            return 3;
+        });
+    }
+
+    // =========================================================================
+    // Sound & Music Dispatches
+    // =========================================================================
+
+    bool ModManager::OnPlaySound(int32_t soundKitId)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnPlaySound", [=](lua_State* L) {
+            lua_pushinteger(L, soundKitId);
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    bool ModManager::OnPlayMusic(const char* musicFile)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnPlayMusic", [=](lua_State* L) {
+            lua_pushstring(L, musicFile ? musicFile : "");
+            return 1;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Item & Container Dispatches
+    // =========================================================================
+
+    bool ModManager::OnItemUse(int32_t bagIndex, int32_t slotIndex)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnItemUse", [=](lua_State* L) {
+            lua_pushinteger(L, bagIndex);
+            lua_pushinteger(L, slotIndex);
+            return 2;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Trade Dispatches
+    // =========================================================================
+
+    void ModManager::OnTradeInitiate(uint64_t targetGuid, int32_t useCursorItem)
+    {
+        DispatchHookEx("OnTradeInitiate", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(targetGuid));
+            lua_pushboolean(L, useCursorItem ? 1 : 0);
+            return 2;
+        });
+    }
+
+    void ModManager::OnTradeAccept()
+    {
+        DispatchHook("OnTradeAccept");
+    }
+
+    // =========================================================================
+    // Combat Feedback / Floating Text Dispatches
+    // =========================================================================
+
+    bool ModManager::OnCombatFeedback(uint64_t guid, int32_t amount, uint32_t schoolMask, uint32_t flags)
+    {
+        bool consumed = false;
+        DispatchHookEx("OnCombatFeedback", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(guid));
+            lua_pushinteger(L, amount);
+            lua_pushinteger(L, schoolMask);
+            lua_pushinteger(L, flags);
+            return 4;
+        }, [&](lua_State* L, int idx) {
+            if (lua_isboolean(L, idx))
+                consumed = (lua_toboolean(L, idx) != 0);
+        });
+        return consumed;
+    }
+
+    // =========================================================================
+    // Camera Dispatches
+    // =========================================================================
+
+    void ModManager::OnCameraUpdate(float x, float y, float z, float fov)
+    {
+        DispatchHookEx("OnCameraUpdate", [=](lua_State* L) {
+            lua_pushnumber(L, x);
+            lua_pushnumber(L, y);
+            lua_pushnumber(L, z);
+            lua_pushnumber(L, fov);
+            return 4;
+        });
+    }
+
+    // =========================================================================
+    // Nameplate Dispatches
+    // =========================================================================
+
+    void ModManager::OnNamePlateCreate(uint64_t unitGuid, void* namePlatePtr)
+    {
+        DispatchHookEx("OnNamePlateCreate", [=](lua_State* L) {
+            lua_pushnumber(L, static_cast<lua_Number>(unitGuid));
+            lua_pushlightuserdata(L, namePlatePtr);
+            return 2;
+        });
+    }
 }

@@ -78,6 +78,51 @@ namespace ModCore
         bool OnChatMessage(int32_t type, const char* sender, const char* message, const char* channel);
         bool OnSendChatMessage(const char* message, int32_t type, int32_t language, const char* target);
 
+        // Environment & Weather dispatches
+        void OnWeatherChange(uint32_t type, float intensity);
+        void OnZoneChange(uint32_t areaId, uint32_t subzoneId, const char* zoneName);
+
+        // Loot dispatches
+        void OnLootOpen(uint64_t guid, int32_t coins, uint32_t lootType);
+        void OnLootSlot(uint32_t slot);
+        void OnLootClose();
+
+        // Merchant dispatches
+        bool OnMerchantBuy(int32_t index, int32_t count);
+
+        // Quest & Gossip dispatches
+        bool OnQuestAccept(uint64_t questGiverGuid);
+        bool OnQuestComplete(uint64_t questGiverGuid);
+        bool OnQuestReward(int32_t rewardIndex);
+        bool OnGossipSelect(int32_t optionIndex);
+
+        // Action & Macro dispatches
+        bool OnActionUse(int32_t slot);
+        bool OnMacroExecute(const char* name, const char* body);
+
+        // Cooldown dispatches
+        void OnCooldownSet(const char* name, float start, float duration);
+
+        // Sound & Music dispatches
+        bool OnPlaySound(int32_t soundKitId);
+        bool OnPlayMusic(const char* musicFile);
+
+        // Item & Container dispatches
+        bool OnItemUse(int32_t bagIndex, int32_t slotIndex);
+
+        // Trade dispatches
+        void OnTradeInitiate(uint64_t targetGuid, int32_t useCursorItem);
+        void OnTradeAccept();
+
+        // Combat Feedback / Floating Text dispatches
+        bool OnCombatFeedback(uint64_t guid, int32_t amount, uint32_t schoolMask, uint32_t flags);
+
+        // Camera dispatches
+        void OnCameraUpdate(float x, float y, float z, float fov);
+
+        // Nameplate dispatches
+        void OnNamePlateCreate(uint64_t unitGuid, void* namePlatePtr);
+
         // Simplified generic hook dispatchers
         bool DispatchHook(const char* hookName);
         bool DispatchHookEx(const char* hookName, 

@@ -342,7 +342,155 @@ namespace ModCore
             "boolean?", "Return true to block sending"
         });
 
-        // 10. Core Classes
+        // 10. Environment & Weather Hooks
+        RegisterHook({
+            "OnWeatherChange", "Environment",
+            "Fired when weather type or intensity changes in active zone",
+            {{"type", "integer", "Weather type ID"}, {"intensity", "number", "Weather intensity (0.0 to 1.0)"}},
+            "void", ""
+        });
+        RegisterHook({
+            "OnZoneChange", "World",
+            "Fired when player crosses zone or subzone boundary",
+            {{"areaId", "integer", "Area ID"}, {"subzoneId", "integer", "Subzone ID"}, {"zoneName", "string", "Localized or internal zone name"}},
+            "void", ""
+        });
+
+        // 11. Loot Hooks
+        RegisterHook({
+            "OnLootOpen", "Loot",
+            "Fired when loot window opens for an entity or container",
+            {{"guid", "number", "Loot target entity GUID"}, {"coins", "integer", "Dropped coin amount in copper"}, {"lootType", "integer", "Loot type classification"}},
+            "void", ""
+        });
+        RegisterHook({
+            "OnLootSlot", "Loot",
+            "Fired when an item slot is looted from the active loot window",
+            {{"slot", "integer", "Loot window slot index (1-based)"}},
+            "void", ""
+        });
+        RegisterHook({
+            "OnLootClose", "Loot",
+            "Fired when active loot window is closed",
+            {}, "void", ""
+        });
+
+        // 12. Merchant Hooks
+        RegisterHook({
+            "OnMerchantBuy", "Merchant",
+            "Fired when buying an item from an active merchant",
+            {{"index", "integer", "Merchant item slot index"}, {"count", "integer", "Number of items to purchase"}},
+            "boolean?", "Return true to cancel or prevent purchase"
+        });
+
+        // 13. Quest & Gossip Hooks
+        RegisterHook({
+            "OnQuestAccept", "Quests",
+            "Fired when accepting a quest from a quest giver",
+            {{"questGiverGuid", "number", "Quest giver entity GUID"}},
+            "boolean?", "Return true to block accepting quest"
+        });
+        RegisterHook({
+            "OnQuestComplete", "Quests",
+            "Fired when completing a quest with a quest giver",
+            {{"questGiverGuid", "number", "Quest giver entity GUID"}},
+            "boolean?", "Return true to block completing quest"
+        });
+        RegisterHook({
+            "OnQuestReward", "Quests",
+            "Fired when selecting and claiming a quest reward",
+            {{"rewardIndex", "integer", "Chosen reward item index"}},
+            "boolean?", "Return true to block claiming reward"
+        });
+        RegisterHook({
+            "OnGossipSelect", "Quests",
+            "Fired when selecting an option in NPC gossip dialog",
+            {{"optionIndex", "integer", "Gossip option index"}},
+            "boolean?", "Return true to block gossip option execution"
+        });
+
+        // 14. Action & Macro Hooks
+        RegisterHook({
+            "OnActionUse", "ActionBar",
+            "Fired when an action bar button is activated",
+            {{"slot", "integer", "Action bar slot index (1-120)"}},
+            "boolean?", "Return true to prevent default action execution"
+        });
+        RegisterHook({
+            "OnMacroExecute", "ActionBar",
+            "Fired before executing macro commands or text",
+            {{"name", "string", "Macro name or script identifier"}, {"body", "string", "Macro command text lines"}},
+            "boolean?", "Return true to block macro execution"
+        });
+
+        // 15. Cooldown Hooks
+        RegisterHook({
+            "OnCooldownSet", "Cooldowns",
+            "Fired when a spell or item cooldown is initialized or refreshed",
+            {{"name", "string", "Cooldown identifier or spell name"}, {"start", "number", "Cooldown start timestamp in seconds"}, {"duration", "number", "Cooldown duration in seconds"}},
+            "void", ""
+        });
+
+        // 16. Sound & Music Hooks
+        RegisterHook({
+            "OnPlaySound", "Sound",
+            "Fired when a sound or sound kit is requested to play",
+            {{"soundKitId", "integer", "Sound kit ID from SoundEntries DBC"}},
+            "boolean?", "Return true to mute or cancel sound playback"
+        });
+        RegisterHook({
+            "OnPlayMusic", "Sound",
+            "Fired when a music track or file is requested to play",
+            {{"musicFile", "string", "Music asset path or file name"}},
+            "boolean?", "Return true to cancel or override music playback"
+        });
+
+        // 17. Item Hooks
+        RegisterHook({
+            "OnItemUse", "Items",
+            "Fired when an item in a container or bag is used or activated",
+            {{"bagIndex", "integer", "Bag container index (0-4)"}, {"slotIndex", "integer", "Bag slot index"}},
+            "boolean?", "Return true to prevent item usage"
+        });
+
+        // 18. Trade Hooks
+        RegisterHook({
+            "OnTradeInitiate", "Trade",
+            "Fired when a player-to-player trade session is initiated",
+            {{"targetGuid", "number", "Trade target character GUID"}, {"useCursorItem", "boolean", "True if initiated with an item on the cursor"}},
+            "void", ""
+        });
+        RegisterHook({
+            "OnTradeAccept", "Trade",
+            "Fired when player clicks Accept in the trade window",
+            {}, "void", ""
+        });
+
+        // 19. Combat Feedback Hooks
+        RegisterHook({
+            "OnCombatFeedback", "Combat",
+            "Fired on combat feedback / floating combat text events (damage, heals, misses)",
+            {{"guid", "number", "Target entity GUID"}, {"amount", "integer", "Feedback amount or value"}, {"schoolMask", "integer", "Damage school bitmask"}, {"flags", "integer", "Combat feedback flags"}},
+            "boolean?", "Return true to suppress floating combat text"
+        });
+
+        // 20. Camera Hooks
+        RegisterHook({
+            "OnCameraUpdate", "Camera",
+            "Fired every frame when active world camera updates position and FOV",
+            {{"x", "number", "Camera World X position"}, {"y", "number", "Camera World Y position"}, {"z", "number", "Camera World Z position"}, {"fov", "number", "Field of View in radians"}},
+            "void", ""
+        });
+
+        // 21. UI & Nameplate Hooks
+        RegisterHook({
+            "OnNamePlateCreate", "UI",
+            "Fired when a nameplate frame is created or initialized for a unit",
+            {{"unitGuid", "number", "Attached unit GUID"}, {"namePlatePtr", "any", "Pointer to CGNamePlateFrame instance"}},
+            "void", ""
+        });
+
+        // 22. Core Classes
         RegisterClass({
             "ModCore", "", "Master modding framework runtime controller",
             {

@@ -2009,6 +2009,7 @@ void CGWorldFrame::OnWorldUpdate() {
     C3Vector camPos = camera->m_position;
     C3Vector forward = camera->Forward();
     C3Vector camTarget = C3Vector(camera->m_position.x + forward.x, camera->m_position.y + forward.y, camera->m_position.z + forward.z);
+    ModCore::Manager().OnCameraUpdate(camPos.x, camPos.y, camPos.z, camera->m_fov);
     this->m_camera->SetupWorldProjection(this->m_viewportDDC);
     this->UpdateDayNight(elapsedSec);
 

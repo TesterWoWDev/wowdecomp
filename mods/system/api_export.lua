@@ -199,4 +199,49 @@ ApiExport.RegisterHook("OnMouseWheel", "Fired on mouse wheel scroll", "fun(delta
 ApiExport.RegisterHook("OnChatMessage", "Fired on incoming chat message", "fun(type: integer, sender: string, message: string, channel: string): boolean?", "Chat")
 ApiExport.RegisterHook("OnSendChatMessage", "Fired on outgoing chat message", "fun(message: string, type: integer, language: integer, target: string): boolean?", "Chat")
 
+-- Environment & Weather Hooks
+ApiExport.RegisterHook("OnWeatherChange", "Fired when weather type or intensity changes in active zone", "fun(type: integer, intensity: number)", "Environment")
+ApiExport.RegisterHook("OnZoneChange", "Fired when player crosses zone or subzone boundary", "fun(areaId: integer, subzoneId: integer, zoneName: string)", "World")
+
+-- Loot Hooks
+ApiExport.RegisterHook("OnLootOpen", "Fired when loot window opens for an entity or container", "fun(guid: number, coins: integer, lootType: integer)", "Loot")
+ApiExport.RegisterHook("OnLootSlot", "Fired when an item slot is looted from the active loot window", "fun(slot: integer)", "Loot")
+ApiExport.RegisterHook("OnLootClose", "Fired when active loot window is closed", "fun()", "Loot")
+
+-- Merchant Hooks
+ApiExport.RegisterHook("OnMerchantBuy", "Fired when buying an item from an active merchant", "fun(index: integer, count: integer): boolean?", "Merchant")
+
+-- Quest & Gossip Hooks
+ApiExport.RegisterHook("OnQuestAccept", "Fired when accepting a quest from a quest giver", "fun(questGiverGuid: number): boolean?", "Quests")
+ApiExport.RegisterHook("OnQuestComplete", "Fired when completing a quest with a quest giver", "fun(questGiverGuid: number): boolean?", "Quests")
+ApiExport.RegisterHook("OnQuestReward", "Fired when selecting and claiming a quest reward", "fun(rewardIndex: integer): boolean?", "Quests")
+ApiExport.RegisterHook("OnGossipSelect", "Fired when selecting an option in NPC gossip dialog", "fun(optionIndex: integer): boolean?", "Quests")
+
+-- Action & Macro Hooks
+ApiExport.RegisterHook("OnActionUse", "Fired when an action bar button is activated", "fun(slot: integer): boolean?", "ActionBar")
+ApiExport.RegisterHook("OnMacroExecute", "Fired before executing macro commands or text", "fun(name: string, body: string): boolean?", "ActionBar")
+
+-- Cooldown Hooks
+ApiExport.RegisterHook("OnCooldownSet", "Fired when a spell or item cooldown is initialized or refreshed", "fun(name: string, start: number, duration: number)", "Cooldowns")
+
+-- Sound & Music Hooks
+ApiExport.RegisterHook("OnPlaySound", "Fired when a sound or sound kit is requested to play", "fun(soundKitId: integer): boolean?", "Sound")
+ApiExport.RegisterHook("OnPlayMusic", "Fired when a music track or file is requested to play", "fun(musicFile: string): boolean?", "Sound")
+
+-- Item Hooks
+ApiExport.RegisterHook("OnItemUse", "Fired when an item in a container or bag is used or activated", "fun(bagIndex: integer, slotIndex: integer): boolean?", "Items")
+
+-- Trade Hooks
+ApiExport.RegisterHook("OnTradeInitiate", "Fired when a player-to-player trade session is initiated", "fun(targetGuid: number, useCursorItem: boolean)", "Trade")
+ApiExport.RegisterHook("OnTradeAccept", "Fired when player clicks Accept in the trade window", "fun()", "Trade")
+
+-- Combat Feedback Hooks
+ApiExport.RegisterHook("OnCombatFeedback", "Fired on combat feedback / floating combat text events", "fun(guid: number, amount: integer, schoolMask: integer, flags: integer): boolean?", "Combat")
+
+-- Camera Hooks
+ApiExport.RegisterHook("OnCameraUpdate", "Fired every frame when active world camera updates position and FOV", "fun(x: number, y: number, z: number, fov: number)", "Camera")
+
+-- UI & Nameplate Hooks
+ApiExport.RegisterHook("OnNamePlateCreate", "Fired when a nameplate frame is created or initialized for a unit", "fun(unitGuid: number, namePlatePtr: any)", "UI")
+
 return ApiExport

@@ -4208,6 +4208,10 @@ void CGGameUI::NewZoneFeedback(int32_t areaId, int32_t subzoneId, int32_t wmoGro
         FrameScript_SignalEvent(inside ? SCRIPT_EVENT_ZONE_CHANGED_INDOORS : SCRIPT_EVENT_ZONE_CHANGED, nullptr);
     }
 
+    if (newArea || textChanged) {
+        ModCore::Manager().OnZoneChange(CGGameUI::m_areaID, CGGameUI::m_subzoneID, CGGameUI::m_realZoneText ? CGGameUI::m_realZoneText : "");
+    }
+
     if (SFile::IsTrial() && (newArea || textChanged)) {
         Blizzard::Streaming::SetZone(CGGameUI::m_areaID, CGGameUI::m_subzoneID);
     }
@@ -4685,6 +4689,9 @@ void CGGameUI::CastSpiritHealSpell() {
 // VERIFY: cd2d4923 auto
 // OFFSET: 0x00513380
 void CGGameUI::ShowCombatFeedback(const WOWGUID& guid, int32_t amount, uint32_t schoolMask, uint32_t flags) {
+    if (ModCore::Manager().OnCombatFeedback(guid.m_guid, amount, schoolMask, flags)) {
+        return;
+    }
     CGGameUI::SignalUnitCombat(guid, "WOUND", amount, schoolMask, flags);
 }
 

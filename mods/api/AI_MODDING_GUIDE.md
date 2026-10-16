@@ -20,6 +20,7 @@ Mods live in `mods/<mod_id>/` with a `mod.json` manifest and an `init.lua` entry
 ```
 
 In `init.lua`:
+
 ```lua
 local MyMod = {}
 function MyMod.Init(context)
@@ -34,7 +35,7 @@ return MyMod
 
 ---
 
-## 2. Exhaustive Hook Catalog (42 Hooks)
+## 2. Exhaustive Hook Catalog (63 Hooks)
 
 | Hook Name | Category | Signature | Description |
 | :--- | :--- | :--- | :--- |
@@ -80,6 +81,27 @@ return MyMod
 | `OnMouseWheel` | **Input** | `fun(delta: integer): boolean?` | Fired on mouse wheel scroll |
 | `OnChatMessage` | **Chat** | `fun(type: integer, sender: string, message: string, channel: string): boolean?` | Fired when an incoming chat message is received from server |
 | `OnSendChatMessage` | **Chat** | `fun(message: string, type: integer, language: integer, target: string): boolean?` | Fired before a chat message is sent from the client |
+| `OnWeatherChange` | **Environment** | `fun(type: integer, intensity: number): void` | Fired when weather type or intensity changes in active zone |
+| `OnZoneChange` | **World** | `fun(areaId: integer, subzoneId: integer, zoneName: string): void` | Fired when player crosses zone or subzone boundary |
+| `OnLootOpen` | **Loot** | `fun(guid: number, coins: integer, lootType: integer): void` | Fired when loot window opens for an entity or container |
+| `OnLootSlot` | **Loot** | `fun(slot: integer): void` | Fired when an item slot is looted from the active loot window |
+| `OnLootClose` | **Loot** | `fun(): void` | Fired when active loot window is closed |
+| `OnMerchantBuy` | **Merchant** | `fun(index: integer, count: integer): boolean?` | Fired when buying an item from an active merchant |
+| `OnQuestAccept` | **Quests** | `fun(questGiverGuid: number): boolean?` | Fired when accepting a quest from a quest giver |
+| `OnQuestComplete` | **Quests** | `fun(questGiverGuid: number): boolean?` | Fired when completing a quest with a quest giver |
+| `OnQuestReward` | **Quests** | `fun(rewardIndex: integer): boolean?` | Fired when selecting and claiming a quest reward |
+| `OnGossipSelect` | **Quests** | `fun(optionIndex: integer): boolean?` | Fired when selecting an option in NPC gossip dialog |
+| `OnActionUse` | **ActionBar** | `fun(slot: integer): boolean?` | Fired when an action bar button is activated |
+| `OnMacroExecute` | **ActionBar** | `fun(name: string, body: string): boolean?` | Fired before executing macro commands or text |
+| `OnCooldownSet` | **Cooldowns** | `fun(name: string, start: number, duration: number): void` | Fired when a spell or item cooldown is initialized or refreshed |
+| `OnPlaySound` | **Sound** | `fun(soundKitId: integer): boolean?` | Fired when a sound or sound kit is requested to play |
+| `OnPlayMusic` | **Sound** | `fun(musicFile: string): boolean?` | Fired when a music track or file is requested to play |
+| `OnItemUse` | **Items** | `fun(bagIndex: integer, slotIndex: integer): boolean?` | Fired when an item in a container or bag is used or activated |
+| `OnTradeInitiate` | **Trade** | `fun(targetGuid: number, useCursorItem: boolean): void` | Fired when a player-to-player trade session is initiated |
+| `OnTradeAccept` | **Trade** | `fun(): void` | Fired when player clicks Accept in the trade window |
+| `OnCombatFeedback` | **Combat** | `fun(guid: number, amount: integer, schoolMask: integer, flags: integer): boolean?` | Fired on combat feedback / floating combat text events (damage, heals, misses) |
+| `OnCameraUpdate` | **Camera** | `fun(x: number, y: number, z: number, fov: number): void` | Fired every frame when active world camera updates position and FOV |
+| `OnNamePlateCreate` | **UI** | `fun(unitGuid: number, namePlatePtr: any): void` | Fired when a nameplate frame is created or initialized for a unit |
 
 ---
 
