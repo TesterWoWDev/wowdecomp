@@ -68,7 +68,6 @@ namespace ModCore
     {
         if (!std::filesystem::exists(scriptPath))
         {
-            std::cerr << "[ModCore] Script not found: " << scriptPath.string() << std::endl;
             return false;
         }
 

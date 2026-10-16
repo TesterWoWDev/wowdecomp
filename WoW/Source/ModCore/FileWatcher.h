@@ -31,5 +31,6 @@ namespace ModCore
         std::thread m_thread;
         std::mutex m_mutex;
         std::vector<std::filesystem::path> m_modifiedFiles;
+        void* m_hDir = nullptr;
     };
 }

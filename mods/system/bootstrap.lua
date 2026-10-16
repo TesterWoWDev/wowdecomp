@@ -22,14 +22,42 @@ ModCore.LogError = function(...) Log("ERROR", ...) end
 
 ModCore.LogInfo("Initializing wowdecomp Modding Framework v%s", ModCore.Version)
 
--- Setup package.path so require() resolves into mods/
+-- Setup package table and safe require() for FrameScript
 local basePath = ModCore.BasePath or "mods/"
+
+package = package or {}
+package.loaded = package.loaded or {}
 package.path = basePath .. "?.lua;" ..
                basePath .. "?/init.lua;" ..
                basePath .. "system/?.lua;" ..
                basePath .. "core_duskhaven/?.lua;" ..
                basePath .. "user_mods/?.lua;" ..
-               package.path
+               (package.path or "")
+
+if not require then
+    function require(modname)
+        if package.loaded[modname] ~= nil then
+            return package.loaded[modname]
+        end
+
+        local rel = string.gsub(modname, "%.", "/")
+        local tried = {}
+        for pattern in string.gmatch(package.path, "[^;]+") do
+            local filename = string.gsub(pattern, "%?", rel)
+            local fn, err = loadfile(filename)
+            if fn then
+                local res = fn()
+                if res == nil then res = true end
+                package.loaded[modname] = res
+                return res
+            else
+                table.insert(tried, string.format("no file '%s'", filename))
+            end
+        end
+
+        error(string.format("module '%s' not found:\n\t%s", modname, table.concat(tried, "\n\t")), 2)
+    end
+end
 
 -- Load Event & Hook Bus
 ModCore.Hooks = require("system.hooks")

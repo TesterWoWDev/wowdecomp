@@ -161,17 +161,6 @@ namespace ModCore
         m_L = L;
         std::cout << "[ModCore] Registering Lua bindings and executing bootstrap..." << std::endl;
 
-        // Open standard package library in Lua state if not yet loaded
-        lua_getglobal(m_L, "package");
-        if (lua_isnil(m_L, -1))
-        {
-            lua_pop(m_L, 1);
-            luaopen_package(m_L);
-        }
-        else
-        {
-            lua_pop(m_L, 1);
-        }
 
         // Register loadfile helper via BytecodeCache
         FrameScript_RegisterFunction("loadfile", Script_LoadFile);

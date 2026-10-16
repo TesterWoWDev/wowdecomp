@@ -37,9 +37,15 @@ namespace ModCore
             return;
 
         m_running = false;
+        if (m_hDir && m_hDir != INVALID_HANDLE_VALUE)
+        {
+            CancelIoEx(static_cast<HANDLE>(m_hDir), nullptr);
+            CloseHandle(static_cast<HANDLE>(m_hDir));
+            m_hDir = nullptr;
+        }
         if (m_thread.joinable())
         {
-            m_thread.detach(); // Detach to avoid blocking shutdown on ReadDirectoryChangesW
+            m_thread.join();
         }
     }
 
@@ -68,6 +74,7 @@ namespace ModCore
             m_running = false;
             return;
         }
+        m_hDir = hDir;
 
         BYTE buffer[4096];
         DWORD bytesReturned = 0;
@@ -110,6 +117,10 @@ namespace ModCore
             }
         }
 
-        CloseHandle(hDir);
+        if (m_hDir == hDir)
+        {
+            CloseHandle(hDir);
+            m_hDir = nullptr;
+        }
     }
 }
