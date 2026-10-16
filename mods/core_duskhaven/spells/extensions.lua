@@ -6,10 +6,28 @@ local SpellExt = {}
 
 local tooltipScanner = nil
 local function GetScanner()
-    if not tooltipScanner and CreateFrame then
-        tooltipScanner = CreateFrame("GameTooltip", "DHSpellDescScanner", nil, "GameTooltipTemplate")
+    if tooltipScanner then return tooltipScanner end
+
+    -- Check if GameTooltip or GlueTooltip already exists in the environment
+    if _G["GameTooltip"] then
+        tooltipScanner = _G["GameTooltip"]
+        return tooltipScanner
     end
-    return tooltipScanner
+    if _G["GlueTooltip"] then
+        tooltipScanner = _G["GlueTooltip"]
+        return tooltipScanner
+    end
+
+    -- Attempt safe creation without template so GlueXML never fails on missing templates
+    if CreateFrame then
+        local ok, frame = pcall(CreateFrame, "GameTooltip", "DHSpellDescScanner")
+        if ok and frame then
+            tooltipScanner = frame
+            return tooltipScanner
+        end
+    end
+
+    return nil
 end
 
 function SpellExt.GetSpellDescription(spellId)
@@ -17,27 +35,37 @@ function SpellExt.GetSpellDescription(spellId)
     if not spellId or spellId == 0 then return "" end
 
     local scanner = GetScanner()
-    if scanner then
-        scanner:SetOwner(WorldFrame or UIParent or UIParent, "ANCHOR_NONE")
-        scanner:ClearLines()
-        if scanner.SetSpellByID then
+    if scanner and scanner.SetSpellByID and scanner.NumLines then
+        local desc = nil
+        pcall(function()
+            if scanner.SetOwner then
+                scanner:SetOwner(WorldFrame or UIParent or scanner, "ANCHOR_NONE")
+            end
+            if scanner.ClearLines then
+                scanner:ClearLines()
+            end
             scanner:SetSpellByID(spellId)
-        end
-        local numLines = scanner:NumLines()
-        for i = 2, numLines do
-            local line = _G["DHSpellDescScannerTextLeft" .. i]
-            if line then
-                local text = line:GetText()
-                if text and text ~= "" and
-                   not text:find("^Rank ") and
-                   not text:find("yd range") and
-                   not text:find("Cast") and
-                   not text:find("Cooldown") and
-                   not text:find("Requires") then
-                    return text
+            local name = scanner.GetName and scanner:GetName()
+            if name then
+                local numLines = scanner:NumLines() or 0
+                for i = 2, numLines do
+                    local line = _G[name .. "TextLeft" .. i]
+                    if line and line.GetText then
+                        local text = line:GetText()
+                        if text and text ~= "" and
+                           not text:find("^Rank ") and
+                           not text:find("yd range") and
+                           not text:find("Cast") and
+                           not text:find("Cooldown") and
+                           not text:find("Requires") then
+                            desc = text
+                            break
+                        end
+                    end
                 end
             end
-        end
+        end)
+        if desc then return desc end
     end
 
     if GetSpellInfo then
