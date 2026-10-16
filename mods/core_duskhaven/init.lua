@@ -33,6 +33,21 @@ function DuskhavenCore.Init(modContext)
         ModCore.LogWarn("Could not load tooltips.evaluator: %s", tostring(tooltip))
     end
 
+    local okCharCreate, charCreate = pcall(require, "ui.char_create")
+    if not okCharCreate then
+        ModCore.LogWarn("Could not load ui.char_create: %s", tostring(charCreate))
+    end
+
+    local okFont, fontConfig = pcall(require, "ui.font_config")
+    if not okFont then
+        ModCore.LogWarn("Could not load ui.font_config: %s", tostring(fontConfig))
+    end
+
+    local okStream, streamConfig = pcall(require, "streaming.config")
+    if not okStream then
+        ModCore.LogWarn("Could not load streaming.config: %s", tostring(streamConfig))
+    end
+
     ModCore.Hooks.Register("OnWorldUpdate", function(dt)
         -- Hook point for visual pumps, combat animations, danger zone ticks
     end, 100)
