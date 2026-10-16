@@ -22,7 +22,27 @@ static void LogLine(const char* text) {
     if (s_logFile != INVALID_HANDLE_VALUE) {
         DWORD written = 0;
         WriteFile(s_logFile, text, static_cast<DWORD>(strlen(text)), &written, nullptr);
+        FlushFileBuffers(s_logFile);
     }
+}
+
+extern "C" void CrashLogWrite(const char* text) {
+    LogLine(text);
+}
+
+static void LogStack(CONTEXT* context);
+
+extern "C" __declspec(selectany) void (*g_pfnCrashLogWriteStack)(const char* header) = nullptr;
+
+extern "C" void CrashLogWriteStack(const char* header) {
+    LogLine(header);
+    CONTEXT context;
+    RtlCaptureContext(&context);
+    LogStack(&context);
+}
+
+static void OnProcessExit() {
+    LogLine("EXIT: atexit triggered (process shutting down)\n");
 }
 
 static void ModuleOffset(void* address, char* out, size_t size) {
@@ -74,26 +94,39 @@ static void LogStack(CONTEXT* context) {
 
         LogLine(line);
 
-        DWORD64 imageBase = 0;
-        PRUNTIME_FUNCTION function = RtlLookupFunctionEntry(frame.Rip, &imageBase, nullptr);
+        __try {
+            DWORD64 imageBase = 0;
+            PRUNTIME_FUNCTION function = RtlLookupFunctionEntry(frame.Rip, &imageBase, nullptr);
 
-        if (!function) {
-            frame.Rip = *reinterpret_cast<DWORD64*>(frame.Rsp);
-            frame.Rsp += 8;
-            continue;
+            if (!function) {
+                if (IsBadReadPtr(reinterpret_cast<void*>(frame.Rsp), 8)) {
+                    break;
+                }
+                frame.Rip = *reinterpret_cast<DWORD64*>(frame.Rsp);
+                frame.Rsp += 8;
+                continue;
+            }
+
+            void* handlerData = nullptr;
+            DWORD64 establisher = 0;
+            RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, frame.Rip, function, &frame, &handlerData, &establisher, nullptr);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            LogLine("  (stack unwind faulted)\n");
+            break;
         }
-
-        void* handlerData = nullptr;
-        DWORD64 establisher = 0;
-        RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, frame.Rip, function, &frame, &handlerData, &establisher, nullptr);
     }
 #endif
 }
 
 static LONG CALLBACK FirstChanceHandler(EXCEPTION_POINTERS* info) {
+    static volatile LONG s_inHandler = 0;
     DWORD code = info->ExceptionRecord->ExceptionCode;
 
     if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_ILLEGAL_INSTRUCTION || code == EXCEPTION_INT_DIVIDE_BY_ZERO || code == EXCEPTION_STACK_OVERFLOW || code == EXCEPTION_PRIV_INSTRUCTION) {
+        if (InterlockedCompareExchange(&s_inHandler, 1, 0) != 0) {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
         char where[MAX_PATH + 32];
         ModuleOffset(info->ExceptionRecord->ExceptionAddress, where, sizeof(where));
 
@@ -106,7 +139,31 @@ static LONG CALLBACK FirstChanceHandler(EXCEPTION_POINTERS* info) {
         }
 
         LogLine(line);
-        LogStack(info->ContextRecord);
+
+        // Also write a minidump FIRST before symbol resolution
+        char dumpPath[MAX_PATH];
+        strcpy_s(dumpPath, sizeof(dumpPath), s_logPath);
+        char* ext = strrchr(dumpPath, '.');
+        if (ext) {
+            strcpy_s(ext, sizeof(dumpPath) - (ext - dumpPath), ".dmp");
+        }
+        HANDLE hDump = CreateFileA(dumpPath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hDump != INVALID_HANDLE_VALUE) {
+            MINIDUMP_EXCEPTION_INFORMATION mei;
+            mei.ThreadId = GetCurrentThreadId();
+            mei.ExceptionPointers = info;
+            mei.ClientPointers = FALSE;
+            MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDump, MiniDumpNormal, &mei, nullptr, nullptr);
+            CloseHandle(hDump);
+        }
+
+        __try {
+            LogStack(info->ContextRecord);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            LogLine("  (LogStack faulted)\n");
+        }
+
+        s_inHandler = 0;
     }
 
     return EXCEPTION_CONTINUE_SEARCH;
@@ -149,5 +206,8 @@ static struct CrashLogInit {
         _CrtSetReportHook(CrtReportHook);
         _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+        atexit(OnProcessExit);
+        g_pfnCrashLogWriteStack = CrashLogWriteStack;
+        LogLine("=== WOWCLIENT CRASH LOGGER INITIALIZED ===\n");
     }
 } s_crashLogInit;
