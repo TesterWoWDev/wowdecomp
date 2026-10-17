@@ -565,7 +565,7 @@ static void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visi
 
     CImVector black;
     *reinterpret_cast<uint32_t*>(&black) = 0xFF000000;
-    GxSceneClear(1, black);
+    GxSceneClear(GxBufferBit_Color, black);
 
     float currentAspect = CoordinateGetAspectRatio();
     if (currentAspect >= s_normalAspect) {
