@@ -3,11 +3,16 @@
 #include "AutoExport.h"
 #include "FileWatcher.h"
 #include "CustomPacket.h"
+#include "Engine/Source/Base/CDataStore.h"
+#include "WoW/Source/Ui/WorldFrame.h"
 
 #include "Engine/Source/lua-5.1/src/lua.h"
 #include "Engine/Source/lua-5.1/src/lauxlib.h"
 #include "Engine/Source/lua-5.1/src/lualib.h"
 #include "Engine/Source/FrameScript/FrameScript.h"
+#include "Engine/Source/Tempest/C3Vector.h"
+#include "WoW/Source/ObjectMgrClient/ObjectMgrClient.h"
+#include "WoW/Source/Object/ObjectClient/Player_C.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -434,9 +439,38 @@ namespace ModCore
 
     void ModManager::OnWorldHitTest(uint64_t guid, const void* point, bool hitObject)
     {
+        m_lastHitGuid = guid;
+        if (point)
+        {
+            const auto* pt = static_cast<const C3Vector*>(point);
+            m_lastHitPointX = pt->x;
+            m_lastHitPointY = pt->y;
+            m_lastHitPointZ = pt->z;
+        }
+        else
+        {
+            m_lastHitPointX = 0.0f;
+            m_lastHitPointY = 0.0f;
+            m_lastHitPointZ = 0.0f;
+        }
+
         DispatchHookEx("OnWorldHitTest", [=](lua_State* L) {
             lua_pushnumber(L, static_cast<lua_Number>(guid));
-            lua_pushlightuserdata(L, const_cast<void*>(point));
+            if (point)
+            {
+                const auto* pt = static_cast<const C3Vector*>(point);
+                lua_createtable(L, 0, 3);
+                lua_pushnumber(L, pt->x);
+                lua_setfield(L, -2, "x");
+                lua_pushnumber(L, pt->y);
+                lua_setfield(L, -2, "y");
+                lua_pushnumber(L, pt->z);
+                lua_setfield(L, -2, "z");
+            }
+            else
+            {
+                lua_pushnil(L);
+            }
             lua_pushboolean(L, hitObject ? 1 : 0);
             return 3;
         });
@@ -446,7 +480,21 @@ namespace ModCore
     {
         bool consumed = false;
         DispatchHookEx("OnTerrainTrack", [=](lua_State* L) {
-            lua_pushlightuserdata(L, const_cast<void*>(point));
+            if (point)
+            {
+                const auto* pt = static_cast<const C3Vector*>(point);
+                lua_createtable(L, 0, 3);
+                lua_pushnumber(L, pt->x);
+                lua_setfield(L, -2, "x");
+                lua_pushnumber(L, pt->y);
+                lua_setfield(L, -2, "y");
+                lua_pushnumber(L, pt->z);
+                lua_setfield(L, -2, "z");
+            }
+            else
+            {
+                lua_pushnil(L);
+            }
             return 1;
         }, [&](lua_State* L, int idx) {
             if (lua_isboolean(L, idx))
@@ -605,6 +653,15 @@ namespace ModCore
         });
     }
 
+    void ModManager::OnSpellPacket(uint32_t opcode, void* msg)
+    {
+        DispatchHookEx("OnSpellPacket", [=](lua_State* L) {
+            lua_pushinteger(L, opcode);
+            lua_pushlightuserdata(L, msg);
+            return 2;
+        });
+    }
+
     void ModManager::OnChannelStart(void* msg)
     {
         DispatchHookEx("OnChannelStart", [=](lua_State* L) {
@@ -640,7 +697,51 @@ namespace ModCore
         bool overridden = false;
         DispatchHookEx("OnTooltipEvaluate", [=](lua_State* L) {
             lua_pushinteger(L, spellId);
+
+            // Push a table wrapper for caster so caster:GetAttackPower() and caster:GetSpellPower() work
+            lua_newtable(L);
+            lua_pushstring(L, "player");
+            lua_setfield(L, -2, "unit");
             lua_pushlightuserdata(L, caster);
+            lua_setfield(L, -2, "_ptr");
+
+            lua_pushcfunction(L, [](lua_State* state) -> int {
+                CGPlayer_C* player = ClntObjMgrGetActivePlayerObj();
+                if (player && player->m_unit) {
+                    float ap = static_cast<float>(player->m_unit->m_unitFieldRangedAttackPower + player->m_unit->m_unitFieldRangedAttackPowerMods[0] + player->m_unit->m_unitFieldRangedAttackPowerMods[1]);
+                    float meleeAp = static_cast<float>(player->m_unit->m_unitFieldAttackPower + player->m_unit->m_unitFieldAttackPowerMods[0] + player->m_unit->m_unitFieldAttackPowerMods[1]);
+                    lua_pushnumber(state, (std::max)(ap, meleeAp));
+                    return 1;
+                }
+                lua_pushnumber(state, 0);
+                return 1;
+            });
+            lua_setfield(L, -2, "GetAttackPower");
+
+            lua_pushcfunction(L, [](lua_State* state) -> int {
+                CGPlayer_C* player = ClntObjMgrGetActivePlayerObj();
+                if (!player) {
+                    lua_pushnumber(state, 0);
+                    return 1;
+                }
+                uint32_t school = 0;
+                if (lua_isstring(state, 2)) {
+                    const char* s = lua_tostring(state, 2);
+                    if (_stricmp(s, "HOLY") == 0) school = 1;
+                    else if (_stricmp(s, "FIRE") == 0) school = 2;
+                    else if (_stricmp(s, "NATURE") == 0) school = 3;
+                    else if (_stricmp(s, "FROST") == 0) school = 4;
+                    else if (_stricmp(s, "SHADOW") == 0) school = 5;
+                    else if (_stricmp(s, "ARCANE") == 0) school = 6;
+                } else if (lua_isnumber(state, 2)) {
+                    school = static_cast<uint32_t>(lua_tonumber(state, 2));
+                }
+                int32_t sp = player->GetModDamageDonePos(school) + player->GetModDamageDoneNeg(school);
+                lua_pushnumber(state, sp > 0 ? sp : 0);
+                return 1;
+            });
+            lua_setfield(L, -2, "GetSpellPower");
+
             lua_pushstring(L, defaultText ? defaultText : "");
             return 3;
         }, [&](lua_State* L, int idx) {

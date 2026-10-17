@@ -4,13 +4,15 @@
 
 local Stubs = {}
 
--- CDBC Stubs
-function Stubs._CDBC_GET(...)
-    return nil
+local DBC = require("system.dbc")
+
+-- CDBC Delegation
+function Stubs._CDBC_GET(tableName, id)
+    return DBC.GetRowUnpacked(tableName, id)
 end
 
-function Stubs.GetCDBCRow(...)
-    return nil
+function Stubs.GetCDBCRow(tableName, id)
+    return DBC.GetRowUnpacked(tableName, id)
 end
 
 -- Discord Stubs
@@ -128,28 +130,28 @@ _G._CDBC_GET = Stubs._CDBC_GET
 _G.GetCDBCRow = Stubs.GetCDBCRow
 _G.DiscordSetGamePresence = Stubs.DiscordSetGamePresence
 _G.DiscordClearGamePresence = Stubs.DiscordClearGamePresence
-_G.Duskhaven_GetContentStreamingProgress = Stubs.Duskhaven_GetContentStreamingProgress
-_G.Duskhaven_AcknowledgeContentStreamingInterfaceUpdate = Stubs.Duskhaven_AcknowledgeContentStreamingInterfaceUpdate
-_G.Duskhaven_CancelContentStreaming = Stubs.Duskhaven_CancelContentStreaming
-_G.GetMPQHashResults = Stubs.GetMPQHashResults
-_G.Duskhaven_GetMonitorCount = Stubs.Duskhaven_GetMonitorCount
-_G.Duskhaven_GetCurrentMonitorSelection = Stubs.Duskhaven_GetCurrentMonitorSelection
-_G.ConvertCoordsToScreenSpace = Stubs.ConvertCoordsToScreenSpace
-_G.GetActivePlayerWorldPosition = Stubs.GetActivePlayerWorldPosition
-_G.GetDistanceFromActivePlayerToWorldPosition = Stubs.GetDistanceFromActivePlayerToWorldPosition
-_G.TranslateToMapCoords = Stubs.TranslateToMapCoords
-_G.ReloadMap = Stubs.ReloadMap
-_G.ToggleDisplayNormals = Stubs.ToggleDisplayNormals
-_G.ToggleGroundEffects = Stubs.ToggleGroundEffects
-_G.ToggleLiquids = Stubs.ToggleLiquids
-_G.ToggleM2 = Stubs.ToggleM2
-_G.ToggleTerrain = Stubs.ToggleTerrain
-_G.ToggleTerrainCulling = Stubs.ToggleTerrainCulling
-_G.ToggleWireframeMode = Stubs.ToggleWireframeMode
-_G.ToggleWMO = Stubs.ToggleWMO
-_G.Duskhaven_GetCreatureDisplayInfo = Stubs.Duskhaven_GetCreatureDisplayInfo
-_G.Duskhaven_GetModelPath = Stubs.Duskhaven_GetModelPath
-_G.Duskhaven_SetModelDisplay = Stubs.Duskhaven_SetModelDisplay
+_G.Duskhaven_GetContentStreamingProgress = _G.Duskhaven_GetContentStreamingProgress or Stubs.Duskhaven_GetContentStreamingProgress
+_G.Duskhaven_AcknowledgeContentStreamingInterfaceUpdate = _G.Duskhaven_AcknowledgeContentStreamingInterfaceUpdate or Stubs.Duskhaven_AcknowledgeContentStreamingInterfaceUpdate
+_G.Duskhaven_CancelContentStreaming = _G.Duskhaven_CancelContentStreaming or Stubs.Duskhaven_CancelContentStreaming
+_G.GetMPQHashResults = _G.GetMPQHashResults or Stubs.GetMPQHashResults
+_G.Duskhaven_GetMonitorCount = _G.Duskhaven_GetMonitorCount or Stubs.Duskhaven_GetMonitorCount
+_G.Duskhaven_GetCurrentMonitorSelection = _G.Duskhaven_GetCurrentMonitorSelection or Stubs.Duskhaven_GetCurrentMonitorSelection
+_G.ConvertCoordsToScreenSpace = _G.ConvertCoordsToScreenSpace or Stubs.ConvertCoordsToScreenSpace
+_G.GetActivePlayerWorldPosition = _G.GetActivePlayerWorldPosition or Stubs.GetActivePlayerWorldPosition
+_G.GetDistanceFromActivePlayerToWorldPosition = _G.GetDistanceFromActivePlayerToWorldPosition or Stubs.GetDistanceFromActivePlayerToWorldPosition
+_G.TranslateToMapCoords = _G.TranslateToMapCoords or Stubs.TranslateToMapCoords
+_G.ReloadMap = _G.ReloadMap or Stubs.ReloadMap
+_G.ToggleDisplayNormals = _G.ToggleDisplayNormals or Stubs.ToggleDisplayNormals
+_G.ToggleGroundEffects = _G.ToggleGroundEffects or Stubs.ToggleGroundEffects
+_G.ToggleLiquids = _G.ToggleLiquids or Stubs.ToggleLiquids
+_G.ToggleM2 = _G.ToggleM2 or Stubs.ToggleM2
+_G.ToggleTerrain = _G.ToggleTerrain or Stubs.ToggleTerrain
+_G.ToggleTerrainCulling = _G.ToggleTerrainCulling or Stubs.ToggleTerrainCulling
+_G.ToggleWireframeMode = _G.ToggleWireframeMode or Stubs.ToggleWireframeMode
+_G.ToggleWMO = _G.ToggleWMO or Stubs.ToggleWMO
+_G.Duskhaven_GetCreatureDisplayInfo = _G.Duskhaven_GetCreatureDisplayInfo or Stubs.Duskhaven_GetCreatureDisplayInfo
+_G.Duskhaven_GetModelPath = _G.Duskhaven_GetModelPath or Stubs.Duskhaven_GetModelPath
+_G.Duskhaven_SetModelDisplay = _G.Duskhaven_SetModelDisplay or Stubs.Duskhaven_SetModelDisplay
 
 ModCore.LogInfo("Duskhaven System & World Stubs module registered.")
 return Stubs

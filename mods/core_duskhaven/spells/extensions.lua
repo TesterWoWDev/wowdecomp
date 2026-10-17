@@ -34,6 +34,13 @@ function SpellExt.GetSpellDescription(spellId)
     spellId = tonumber(spellId)
     if not spellId or spellId == 0 then return "" end
 
+    if _GetSpellDescription then
+        local desc = _GetSpellDescription(spellId)
+        if desc and desc ~= "" then
+            return desc
+        end
+    end
+
     local scanner = GetScanner()
     if scanner and scanner.SetSpellByID and scanner.NumLines then
         local desc = nil
@@ -79,6 +86,13 @@ function SpellExt.GetSpellNameById(spellId)
     spellId = tonumber(spellId)
     if not spellId or spellId == 0 then return nil, nil end
 
+    if _GetSpellNameById then
+        local name, rank = _GetSpellNameById(spellId)
+        if name then
+            return name, rank
+        end
+    end
+
     if GetSpellInfo then
         local name, rank = GetSpellInfo(spellId)
         if name then
@@ -92,6 +106,13 @@ function SpellExt.GetSpellIconById(spellId)
     spellId = tonumber(spellId)
     if not spellId or spellId == 0 then return nil end
 
+    if _GetSpellIconById then
+        local icon = _GetSpellIconById(spellId)
+        if icon then
+            return icon
+        end
+    end
+
     if GetSpellInfo then
         local _, _, icon = GetSpellInfo(spellId)
         if icon then
@@ -102,11 +123,24 @@ function SpellExt.GetSpellIconById(spellId)
 end
 
 function SpellExt.SpellRequiresComboPoints(spellId)
+    spellId = tonumber(spellId)
+    if not spellId or spellId == 0 then return false end
+
+    if _SpellRequiresComboPoints then
+        return _SpellRequiresComboPoints(spellId)
+    end
     return false
 end
 
 function SpellExt.UnitCustomCastingData(unit)
     if not unit then return nil end
+
+    if _UnitCustomCastingData then
+        local spellId, hideCastbar, invertCastbar = _UnitCustomCastingData(unit)
+        if spellId then
+            return spellId, hideCastbar, invertCastbar
+        end
+    end
 
     if UnitCastingInfo then
         local name, _, _, _, _, _, _, castId = UnitCastingInfo(unit)
@@ -126,34 +160,61 @@ function SpellExt.UnitCustomCastingData(unit)
 end
 
 function SpellExt.PreloadProfessionItemCache(itemId)
+    if _PreloadProfessionItemCache then
+        return _PreloadProfessionItemCache(tonumber(itemId) or 0)
+    end
     return true
 end
 
 function SpellExt.GetProfessionRecipeCount(skillLineId)
+    if _GetProfessionRecipeCount then
+        return _GetProfessionRecipeCount(tonumber(skillLineId) or 0)
+    end
     return 0
 end
 
 function SpellExt.GetProfessionRecipeSpellId(skillLineId, index)
+    if _GetProfessionRecipeSpellId then
+        return _GetProfessionRecipeSpellId(tonumber(skillLineId) or 0, tonumber(index) or 0)
+    end
     return nil
 end
 
 function SpellExt.GetProfessionRecipeInfo(skillLineId, index)
+    if _GetProfessionRecipeInfo then
+        return _GetProfessionRecipeInfo(tonumber(skillLineId) or 0, tonumber(index) or 0)
+    end
     return nil
 end
 
 function SpellExt.GetProfessionRecipeRequirements(skillLineId, index)
+    if _GetProfessionRecipeRequirements then
+        return _GetProfessionRecipeRequirements(tonumber(skillLineId) or 0, tonumber(index) or 0)
+    end
     return "", 0, 0
 end
 
 function SpellExt.GetProfessionRecipeReagentCount(skillLineId, index)
+    if _GetProfessionRecipeReagentCount then
+        return _GetProfessionRecipeReagentCount(tonumber(skillLineId) or 0, tonumber(index) or 0)
+    end
     return 0
 end
 
 function SpellExt.GetProfessionRecipeReagentInfo(skillLineId, index, reagentIndex)
+    if _GetProfessionRecipeReagentInfo then
+        return _GetProfessionRecipeReagentInfo(tonumber(skillLineId) or 0, tonumber(index) or 0, tonumber(reagentIndex) or 0)
+    end
     return nil
 end
 
 function SpellExt.Duskhaven_GetUnitDisplayID(unit)
+    if _Duskhaven_GetUnitDisplayID then
+        return _Duskhaven_GetUnitDisplayID(unit)
+    end
+    if _GetUnitDisplayID then
+        return _GetUnitDisplayID(unit)
+    end
     return 0
 end
 
@@ -171,6 +232,7 @@ _G.GetProfessionRecipeRequirements = SpellExt.GetProfessionRecipeRequirements
 _G.GetProfessionRecipeReagentCount = SpellExt.GetProfessionRecipeReagentCount
 _G.GetProfessionRecipeReagentInfo = SpellExt.GetProfessionRecipeReagentInfo
 _G.Duskhaven_GetUnitDisplayID = SpellExt.Duskhaven_GetUnitDisplayID
+_G.GetUnitDisplayID = SpellExt.Duskhaven_GetUnitDisplayID
 
 ModCore.LogInfo("Duskhaven Spell Extensions module registered.")
 return SpellExt

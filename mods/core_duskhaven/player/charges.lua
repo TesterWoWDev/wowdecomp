@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Duskhaven Spell Charges & Cooldown Tracking
+-- Duskhaven Spell Charges & Cooldown Tracking (Pure Lua)
 -- ==============================================================================
 
 local Charges = {}
@@ -15,13 +15,21 @@ function Charges.Update(spellId, currentCharges, maxCharges, remainingCooldown, 
         cd = existing.cooldown
     end
 
+    local curCharges = tonumber(currentCharges) or 0
+    local maxC = tonumber(maxCharges) or 0
+    local remCd = tonumber(remainingCooldown) or 0
+
     spellCharges[spellId] = {
-        currentCharges = tonumber(currentCharges) or 0,
-        maxCharges = tonumber(maxCharges) or 0,
-        remainingCooldown = tonumber(remainingCooldown) or 0,
-        cooldown = cd,
-        updateTime = (GetTime and GetTime()) or 0
+        currentCharges    = curCharges,
+        maxCharges        = maxC,
+        remainingCooldown = remCd,
+        cooldown          = cd,
+        updateTime        = (GetTime and GetTime()) or 0
     }
+
+    if ModCore and ModCore.Hooks then
+        ModCore.Hooks.Fire("OnSpellChargesUpdated", spellId, curCharges, maxC, remCd, cd)
+    end
 end
 
 function Charges.Get(spellId)
@@ -47,13 +55,8 @@ function Charges.Clear()
 end
 
 -- Export to global Lua environment (_G) for AddOns and FrameXML
-_G.GetChargeInfoForSpell = function(spellId)
-    return Charges.Get(spellId)
-end
-
-_G.UpdateChargeInfoForSpell = function(spellId, currentCharges, maxCharges, remainingCooldown, cooldown)
-    Charges.Update(spellId, currentCharges, maxCharges, remainingCooldown, cooldown)
-end
+_G.GetChargeInfoForSpell = Charges.Get
+_G.UpdateChargeInfoForSpell = Charges.Update
 
 ModCore.LogInfo("Duskhaven Spell Charges module registered.")
 return Charges

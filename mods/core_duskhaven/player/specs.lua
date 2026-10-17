@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Duskhaven Player Active Spec & Mastery System
+-- Duskhaven Player Active Spec & Mastery System (Pure Lua)
 -- ==============================================================================
 
 local Specs = {}
@@ -14,7 +14,8 @@ local spec2 = { [2]=true, [5]=true, [8]=true, [11]=true, [14]=true, [17]=true, [
 local spec3 = { [3]=true, [6]=true, [9]=true, [12]=true, [15]=true, [18]=true, [21]=true, [24]=true, [27]=true, [30]=true, [36]=true }
 local spec4 = { [31]=true, [32]=true, [33]=true }
 
-local function SpecToIndex(specId)
+function Specs.SpecToIndex(specId)
+    specId = tonumber(specId) or 0
     if spec1[specId] then return 1 end
     if spec2[specId] then return 2 end
     if spec3[specId] then return 3 end
@@ -27,7 +28,11 @@ function Specs.GetActiveSpec()
 end
 
 function Specs.SetActiveSpec(specId)
+    local oldSpec = activeSpec
     activeSpec = tonumber(specId) or 0
+    if oldSpec ~= activeSpec and ModCore and ModCore.Hooks then
+        ModCore.Hooks.Fire("OnActiveSpecChanged", activeSpec, oldSpec)
+    end
 end
 
 function Specs.SetMasteryRatings(r1, r2, r3, r4)
@@ -40,16 +45,36 @@ function Specs.SetMasteryRatings(r1, r2, r3, r4)
     masteryRatings[2] = (n2 ~= 0) and n2 or 1.0
     masteryRatings[3] = (n3 ~= 0) and n3 or 1.0
     masteryRatings[4] = (n4 ~= 0) and n4 or 1.0
+
+    if ModCore and ModCore.Hooks then
+        ModCore.Hooks.Fire("OnMasteryRatingsChanged", masteryRatings)
+    end
+end
+
+function Specs.GetMasteryRatingSpec(index)
+    index = tonumber(index) or 1
+    if index < 1 or index > 4 then index = 1 end
+    return masteryRatings[index] or 1.0
 end
 
 function Specs.UpdateMasteryAmount(amount, pct)
     masteryAmount = tonumber(amount) or 0
     masteryPct = tonumber(pct) or 0.0
+
+    if ModCore and ModCore.Hooks then
+        ModCore.Hooks.Fire("OnMasteryChanged", masteryAmount, masteryPct)
+    end
+end
+
+function Specs.GetMasteryForSpec(specIndex)
+    local rating = Specs.GetMasteryRatingSpec(specIndex)
+    if rating <= 0.0 then rating = 1.0 end
+    return (masteryAmount / rating) + masteryPct
 end
 
 function Specs.GetMasteryRating()
-    local idx = SpecToIndex(activeSpec)
-    local rating = masteryRatings[idx] or 1.0
+    local idx = Specs.SpecToIndex(activeSpec)
+    local rating = Specs.GetMasteryRatingSpec(idx)
     if rating <= 0.0 then rating = 1.0 end
 
     -- CR_MASTERY is rating index 26 in 3.3.5/Cata combat ratings
@@ -63,25 +88,15 @@ function Specs.GetMasteryRating()
 end
 
 -- Export to global Lua environment (_G)
-_G.GetActiveSpec = function()
-    return Specs.GetActiveSpec()
-end
-
-_G.SetActiveSpec = function(specId)
-    Specs.SetActiveSpec(specId)
-end
-
-_G.GetMasteryRating = function()
-    return Specs.GetMasteryRating()
-end
-
-_G.SetMasteryRatings = function(r1, r2, r3, r4)
-    Specs.SetMasteryRatings(r1, r2, r3, r4)
-end
-
-_G.UpdateMasteryAmount = function(amount, pct)
-    Specs.UpdateMasteryAmount(amount, pct)
-end
+_G.GetActiveSpec = Specs.GetActiveSpec
+_G.SetActiveSpec = Specs.SetActiveSpec
+_G.GetCharActiveSpec = Specs.GetActiveSpec
+_G.SetCharActiveSpec = Specs.SetActiveSpec
+_G.GetMasteryRating = Specs.GetMasteryRating
+_G.GetMasteryForSpec = Specs.GetMasteryForSpec
+_G.GetMasteryRatingSpec = Specs.GetMasteryRatingSpec
+_G.SetMasteryRatings = Specs.SetMasteryRatings
+_G.UpdateMasteryAmount = Specs.UpdateMasteryAmount
 
 ModCore.LogInfo("Duskhaven Specs & Mastery module registered.")
 return Specs

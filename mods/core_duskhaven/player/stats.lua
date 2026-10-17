@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Duskhaven Player Stats & Combat Rating Extensions
+-- Duskhaven Player Stats & Combat Rating Extensions (Pure Lua)
 -- ==============================================================================
 
 local Stats = {}
@@ -31,6 +31,10 @@ function Stats.GetModCastSpeed()
 end
 
 function Stats.GetWeaponAP(attackType)
+    if UnitAttackPower then
+        local base, pos, neg = UnitAttackPower("player")
+        return (base or 0) + (pos or 0) + (neg or 0)
+    end
     return 0.0
 end
 
@@ -60,15 +64,15 @@ function Stats.GetAvoidancePercent()
 end
 
 -- Export to global Lua environment (_G)
-_G.GetShapeshiftFormID = Stats.GetShapeshiftFormID
-_G.GetCombatRatingMult = Stats.GetCombatRatingMult
+_G.GetShapeshiftFormID   = Stats.GetShapeshiftFormID
+_G.GetCombatRatingMult   = Stats.GetCombatRatingMult
 _G.GetCombatRatingScalar = Stats.GetCombatRatingScalar
-_G.GetModCastSpeed = Stats.GetModCastSpeed
-_G.GetWeaponAP = Stats.GetWeaponAP
-_G.GetPetSP = Stats.GetPetSP
-_G.GetSpeedPercent = Stats.GetSpeedPercent
-_G.GetLeechPercent = Stats.GetLeechPercent
-_G.GetAvoidancePercent = Stats.GetAvoidancePercent
+_G.GetModCastSpeed       = Stats.GetModCastSpeed
+_G.GetWeaponAP           = Stats.GetWeaponAP
+_G.GetPetSP              = Stats.GetPetSP
+_G.GetSpeedPercent       = Stats.GetSpeedPercent
+_G.GetLeechPercent       = Stats.GetLeechPercent
+_G.GetAvoidancePercent   = Stats.GetAvoidancePercent
 
 ModCore.LogInfo("Duskhaven Player Stats module registered.")
 return Stats

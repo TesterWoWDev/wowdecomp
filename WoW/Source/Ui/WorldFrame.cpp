@@ -297,6 +297,16 @@ void CGWorldFrame::GetCameraPosition(C3Vector* position) {
 // VERIFY: c8cc818e auto
 // OFFSET: 0x004F66C0
 void CGWorldFrame::OnLayerTrackTerrain(const HITTESTRESULT& result) {
+    if (ModCore::Manager().IsCastAtCursor()) {
+        ModCore::Manager().SetCastAtCursor(false);
+        CTerrainClickEvent evt;
+        evt.m_guid = WOWGUID();
+        evt.m_point = result.m_point;
+        evt.m_button = MOUSE_BUTTON_LEFT;
+        CGGameUI::HandleTerrainClick(evt);
+        return;
+    }
+
     if (ModCore::Manager().OnTerrainTrack(&result.m_point)) {
         return;
     }

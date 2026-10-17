@@ -18,7 +18,13 @@ function DuskhavenCore.Init(modContext)
         ModCore.LogWarn("Could not load config.dh_config: %s", tostring(dhConfig))
     end
 
-    -- 2. Player Subsystems (Charges, Specs, Mastery, Stats)
+    -- 2. CDBC Subsystem
+    local okDBC, dbcModule = pcall(require, "dbc.init")
+    if not okDBC then
+        ModCore.LogWarn("Could not load dbc.init: %s", tostring(dbcModule))
+    end
+
+    -- 3. Player Subsystems (Charges, Specs, Mastery, Stats, Item Overrides)
     local okCharges, charges = pcall(require, "player.charges")
     if not okCharges then
         ModCore.LogWarn("Could not load player.charges: %s", tostring(charges))
@@ -32,6 +38,11 @@ function DuskhavenCore.Init(modContext)
     local okStats, stats = pcall(require, "player.stats")
     if not okStats then
         ModCore.LogWarn("Could not load player.stats: %s", tostring(stats))
+    end
+
+    local okItemOv, itemOv = pcall(require, "player.item_overrides")
+    if not okItemOv then
+        ModCore.LogWarn("Could not load player.item_overrides: %s", tostring(itemOv))
     end
 
     -- 3. UI & Frame Extensions

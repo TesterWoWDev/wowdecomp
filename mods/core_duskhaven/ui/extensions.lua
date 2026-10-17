@@ -128,17 +128,17 @@ function UIExt.EmitFrameEventByName(eventName, ...)
 end
 
 -- Export to global Lua environment (_G)
-_G.FireActionBarSlotUpdateEvent = UIExt.FireActionBarSlotUpdateEvent
-_G.FireTalentUpdateEvent = UIExt.FireTalentUpdateEvent
-_G.FlashGameWindow = UIExt.FlashGameWindow
-_G.FindSpellActionBarSlot = UIExt.FindSpellActionBarSlot
-_G.ReplaceActionBarSpell = UIExt.ReplaceActionBarSpell
-_G.SetSpellInActionBarSlot = UIExt.SetSpellInActionBarSlot
-_G.SetFrameChildClipping = UIExt.SetFrameChildClipping
-_G.GetFrameChildClipping = UIExt.GetFrameChildClipping
-_G.SetTextureWithMask = UIExt.SetTextureWithMask
-_G.SetPortraitToTexture = UIExt.SetPortraitToTexture
-_G.EmitFrameEventByName = UIExt.EmitFrameEventByName
+_G.FireActionBarSlotUpdateEvent = _G.FireActionBarSlotUpdateEvent or UIExt.FireActionBarSlotUpdateEvent
+_G.FireTalentUpdateEvent = _G.FireTalentUpdateEvent or UIExt.FireTalentUpdateEvent
+_G.FlashGameWindow = _G.FlashGameWindow or UIExt.FlashGameWindow
+_G.FindSpellActionBarSlot = _G.FindSpellActionBarSlot or UIExt.FindSpellActionBarSlot
+_G.ReplaceActionBarSpell = _G.ReplaceActionBarSpell or UIExt.ReplaceActionBarSpell
+_G.SetSpellInActionBarSlot = _G.SetSpellInActionBarSlot or UIExt.SetSpellInActionBarSlot
+_G.SetFrameChildClipping = _G.SetFrameChildClipping or UIExt.SetFrameChildClipping
+_G.GetFrameChildClipping = _G.GetFrameChildClipping or UIExt.GetFrameChildClipping
+_G.SetTextureWithMask = _G.SetTextureWithMask or UIExt.SetTextureWithMask
+_G.SetPortraitToTexture = _G.SetPortraitToTexture or UIExt.SetPortraitToTexture
+_G.EmitFrameEventByName = _G.EmitFrameEventByName or UIExt.EmitFrameEventByName
 
 ModCore.LogInfo("Duskhaven UI Extensions module registered.")
 return UIExt

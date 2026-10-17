@@ -35,6 +35,19 @@ namespace ModCore
         bool OnTerrainTrack(const void* point);
         bool OnTerrainClick(int32_t button, float x, float y, float z);
 
+        // World hit test state
+        uint64_t GetLastHitGuid() const { return m_lastHitGuid; }
+        void GetLastHitPoint(float& x, float& y, float& z) const
+        {
+            x = m_lastHitPointX;
+            y = m_lastHitPointY;
+            z = m_lastHitPointZ;
+        }
+
+        // Ground targeting cursor bypass
+        void SetCastAtCursor(bool enable) { m_castAtCursor = enable; }
+        bool IsCastAtCursor() const { return m_castAtCursor; }
+
         // Glue / UI dispatches
         void OnGlueResume();
         void OnGlueIdle();
@@ -51,6 +64,7 @@ namespace ModCore
         // Spell dispatches
         bool OnSpellQuery(const char* queryType, uint32_t spellId, int32_t* outResult);
         void OnSpellCast(uint32_t spellId, uint64_t casterGuid, uint64_t targetGuid);
+        void OnSpellPacket(uint32_t opcode, void* msg);
         void OnChannelStart(void* msg);
         void OnChannelUpdate(void* msg);
         void OnChannelStop();
@@ -154,6 +168,11 @@ namespace ModCore
         bool m_cacheEnabled = true;
         bool m_hotReloadEnabled = true;
         bool m_aiExportOnBoot = true;
+        bool m_castAtCursor = false;
+        uint64_t m_lastHitGuid = 0;
+        float m_lastHitPointX = 0.0f;
+        float m_lastHitPointY = 0.0f;
+        float m_lastHitPointZ = 0.0f;
     };
 
     // Concise singleton accessor

@@ -1108,6 +1108,7 @@ void PendingSpellCast::OnSpellStartPacket(CDataStore* msg) {
 // VERIFY: ccbce7b4 manual
 // OFFSET: 0x0080FEE0
 int32_t Packet_Group_30(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
+    ModCore::Manager().OnSpellPacket(msgId, msg);
     SmartGUID castItem;
     SmartGUID caster;
     *msg >> castItem;

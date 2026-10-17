@@ -69,6 +69,9 @@ ModCore.Net = require("system.net")
 -- Load Auto-Export Engine (used for AI schema & EmmyLua generator)
 ModCore.ApiExport = require("system.api_export")
 
+-- Load Virtual DBC Table Engine
+ModCore.DBC = require("system.dbc")
+
 -- ==============================================================================
 -- Unified Hook Dispatch & Frontend Convenience APIs
 -- ==============================================================================
