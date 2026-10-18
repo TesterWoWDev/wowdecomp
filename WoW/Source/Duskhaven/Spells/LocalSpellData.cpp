@@ -931,7 +931,7 @@ namespace LocalSpellData
                 if (powerType == -2)
                     maxPower = unit->m_unit ? unit->m_unit->m_unitFieldMaxhealth : 0;
                 else if (powerType >= 0 && powerType <= 6)
-                    maxPower = unit->GetBasePowerForType(powerType);
+                    maxPower = unit->GetBasePowerForType(static_cast<POWER_TYPE>(powerType));
 
                 cost += (maxPower * actionRow.m_manaCostPct) / 100u;
             }
